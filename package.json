@@ -1,0 +1,36 @@
+{
+  "name": "smartair",
+  "version": "1.0.0",
+  "description": "Smart Aircon Management System",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dylandk0226/SmartAir_Staging.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dylandk0226/SmartAir_Staging/issues"
+  },
+  "homepage": "https://github.com/dylandk0226/SmartAir_Staging#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "mssql": "^12.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
