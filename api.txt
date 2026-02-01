@@ -1,0 +1,246 @@
+1. Register user
+POST http://localhost:3000/api/register
+
+{
+  "username": "admin1",
+  "password": "Admin123!",
+  "role": "Admin"
+}
+
+{
+  "username": "tech1",
+  "password": "Tech123!",
+  "role": "Technician",
+  "name": "Mike Tech",
+  "phone": "87654321",
+  "email": "mike@smartair.com"
+}
+
+2. Register Customer Account
+POST http://localhost:3000/api/customer/register
+
+{
+  "username": "customer1",
+  "password": "Customer123!",
+  "name": "John Doe",
+  "phone": "91234567",
+  "email": "john@example.com",
+  "address": "123 Main Street, Singapore 123456"
+}
+
+3. Login
+POST http://localhost:3000/api/login
+
+{
+  "username": "admin1",
+  "password": "Admin123!"
+}
+
+{
+  "username": "customer111",
+  "password": "Password123!"
+}
+
+4. Get User Permission
+Get http://localhost:3000/api/users/permission
+
+5. Get All users
+Get http://localhost:3000/api/users
+
+6. Get User by idleTimeoutMillis
+Get http://localhost:3000/api/users/101
+
+7. Update User
+Put http://localhost:3000/api/users/101
+
+{
+  "username": "admin1_updated",
+  "role": "Admin"
+}
+
+8. Delete User
+Delete http://localhost:3000/api/users/102
+
+9. Reset User password
+POST http://localhost:3000/api/users/101/resetpassword
+
+{
+  "password": "NewPassword123!"
+}
+
+10. Get All Customers
+GET http://localhost:3000/api/customers
+
+
+11. Get Customer by User ID
+GET http://localhost:3000/api/customers/user/107
+
+12. Get Customer by ID
+GET http://localhost:3000/api/customers/1001
+
+13. Create Customer
+POST http://localhost:3000/api/customers
+
+{
+  "name": "Jane Smith",
+  "phone": "98765432",
+  "email": "jane@example.com",
+  "address": "456 Orchard Road, Singapore 238859"
+}
+
+14. Update Customer
+PUT http://localhost:3000/api/customers/1005
+
+{
+  "name": "Jane Smith Updated",
+  "phone": "98765432",
+  "email": "jane@example.com",
+  "address": "456 Orchard Road, Singapore 238859"
+}
+
+15. Delete Customer
+DELETE http://localhost:3000/api/customers/1005
+
+16. Get All Bookings
+GET http://localhost:3000/api/bookings
+
+17. Get Bookings with Filters
+GET http://localhost:3000/api/bookings/filter?service_type=maintenance
+
+18. Get Bookings by Customer
+GET http://localhost:3000/api/bookings/customer/1003
+
+19. Get Bookings by Status
+GET http://localhost:3000/api/bookings/status/pending
+
+20. Get Booking by ID
+GET http://localhost:3000/api/bookings/1
+
+21. Create Booking
+POST http://localhost:3000/api/bookings
+
+{
+  "customer_id": 1001,
+  "aircon_unit_id": 1,
+  "service_type": "maintenance",
+  "preferred_date": "2026-02-15",
+  "preferred_time": "morning",
+  "service_address": "123 Main Street, Singapore 123456",
+  "contact_phone": "91234567"
+}
+
+
+22. Update Booking
+PUT http://localhost:3000/api/bookings/3
+
+{
+  "service_type": "repair",
+  "preferred_date": "2026-02-16",
+  "preferred_time": "afternoon",
+  "service_address": "123 Main Street, Singapore 123456",
+  "contact_phone": "91234567",
+  "status": "pending"
+}
+
+23. Update Booking Status
+PUT http://localhost:3000/api/bookings/3/status
+
+{
+  "status": "confirmed"
+}
+
+24. Delete Booking
+DELETE http://localhost:3000/api/bookings/3
+
+25. Get All Booking Assignments
+GET http://localhost:3000/api/booking-assignments
+
+26. Get Assignments by Scheduled Date
+GET http://localhost:3000/api/booking-assignments/date/2026-02-15
+
+27. Get Assignment by Booking ID
+GET http://localhost:3000/api/booking-assignments/booking/1
+
+28. Get Assignments by Technician
+GET http://localhost:3000/api/booking-assignments/technician/203
+
+29. Get Assignments by Status
+GET http://localhost:3000/api/booking-assignments/status/assigned
+
+30. Create Booking Assignment
+POST http://localhost:3000/api/booking-assignments
+
+{
+  "booking_id": 4,
+  "technician_id": 202,
+  "scheduled_date": "2026-02-15",
+  "scheduled_time": "morning",
+  "estimated_duration": 120,
+  "special_notes": "Bring spare filters",
+  "status": "assigned"
+}
+
+31. Update Booking Assignment
+PUT http://localhost:3000/api/booking-assignments/1001
+
+{
+  "technician_id": 202,
+  "scheduled_date": "2026-02-20",
+  "scheduled_time": "14:00",
+  "completion_date": null,
+  "actual_cost": null,
+  "notes": "Rescheduled to afternoon",
+  "status": "assigned"
+}
+
+32. Update Assignment Status
+PUT http://localhost:3000/api/booking-assignments/9/status
+
+{
+  "status": "completed"
+}
+
+33. Delete Booking Assignment
+DELETE http://localhost:3000/api/booking-assignments/9
+
+34. Register Customer Account
+POST http://localhost:3000/api/customer/register
+
+{
+  "username": "customer111",
+  "password": "Password123!",
+  "name": "John Doe",
+  "phone": "91234567",
+  "email": "johnDoe@gmail.com",
+  "address": "123 Main Street, Singapore 123456"
+}
+
+35. Customer Profile
+GET http://localhost:3000/api/customer/profile
+
+36. Update Own Profile
+PUT http://localhost:3000/api/customer/profile
+
+{
+  "name": "John Doe Updated",
+  "phone": "98765432",
+  "email": "john.updated@example.com",
+  "address": "456 New Street, Singapore 654321"
+}
+
+37. Get Own Bookings
+GET http://localhost:3000/api/customer/bookings
+
+38. Create New Bookings
+POST http://localhost:3000/api/customer/bookings
+
+{
+  "aircon_unit_id": 1,
+  "service_type": "maintenance",
+  "preferred_date": "2026-02-15",
+  "preferred_time": "morning",
+  "service_address": "123 Main Street, Singapore 123456",
+  "contact_phone": "91234567"
+}
+
+
