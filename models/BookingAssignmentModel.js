@@ -1,5 +1,4 @@
-const sql = require("mssql");
-const dbConfig = require("../dbConfig");
+const { sql, dbConfig } = require('../dbConfig');
 
 //Get all Booking Assignments
 async function getAllBookingAssignments() {
@@ -363,64 +362,28 @@ async function updateAssignmentStatus(id, status) {
     try {
         connection = await sql.connect(dbConfig);
 
-        const getAssignmentQuery = "SELECT booking_id FROM BookingAssignments WHERE id = @id";
-        const getRequest = connection.request();
-        getRequest.input("id", sql.Int, id);
-        const assignmentResult = await getRequest.query(getAssignmentQuery);
-
-        if (assignmentResult.recordset.length === 0) {
-            return null;
-        }
-
-        const bookingId = assignmentResult.recordset[0].booking_id;
-
-        const updateQuery = `
+        const query = `
             UPDATE BookingAssignments
             SET status = @status
             WHERE id = @id
         `;
 
-        const updateRequest = connection.request();
-        updateRequest.input("id", sql.Int, id);
-        updateRequest.input("status", sql.VarChar, status);
-        await updateRequest.query(updateQuery);
+        const request = connection.request();
+        request.input("id", sql.Int, id);
+        request.input("status", sql.VarChar, status);
+
+        await request.query(query);
 
         if (status === 'completed') {
-            const updateBookingQuery = `
-                UPDATE Bookings 
-                SET status = 'completed', updated_at = GETDATE() 
-                WHERE id = @booking_id
-            `;
-            const bookingRequest = connection.request();
-            bookingRequest.input("booking_id", sql.Int, bookingId);
-            await bookingRequest.query(updateBookingQuery);
+            const assignment = await getBookingAssignmentById(id);
+            if (assignment) {
+                await connection.request()
+                    .input("booking_id", sql.Int, assignment.booking_id)
+                    .query("UPDATE Bookings SET status = 'completed', updated_at = GETDATE() WHERE id = @booking_id");
+            }
         }
 
-        const finalQuery = `
-            SELECT 
-                ba.*,
-                b.service_type,
-                b.preferred_date,
-                b.service_address,
-                b.contact_phone,
-                c.name as customer_name,
-                c.phone as customer_phone,
-                c.email as customer_email,
-                t.name as technician_name,
-                t.phone as technician_phone,
-                t.email as technician_email
-            FROM BookingAssignments ba
-            INNER JOIN Bookings b ON ba.booking_id = b.id
-            INNER JOIN Customers c ON b.customer_id = c.id
-            INNER JOIN Technicians t ON ba.technician_id = t.id
-            WHERE ba.id = @id
-        `;
-        const finalRequest = connection.request();
-        finalRequest.input("id", sql.Int, id);
-        const result = await finalRequest.query(finalQuery);
-
-        return result.recordset[0];
-
+        return await getBookingAssignmentById(id);
     } catch (error) {
         console.error("Database error:", error);
         throw error;

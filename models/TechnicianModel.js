@@ -1,5 +1,4 @@
-const sql = require ("mssql");
-const dbConfig = require("../dbConfig");
+const { sql, dbConfig } = require('../dbConfig');
 
 //Get all Technicians
 async function getAllTechnicians() {

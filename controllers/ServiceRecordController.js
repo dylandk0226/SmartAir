@@ -18,7 +18,7 @@ async function getAllServiceRecords(req, res) {
             return unit;
         })
 
-        res.json(ServiceRecords);
+        res.json(formattedServiceRecords);
     } catch (error) {
         console.error ("Controller error:", error);
         res.status(500).json ({error: "Error retrieving service records"});

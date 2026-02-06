@@ -3,8 +3,7 @@ const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 const TechnicianModel = require("../models/TechnicianModel");
 const { getPermissions } = require("../middlewares/PermissionValidation");
-const { user } = require("../dbConfig");
-const sql = require("mssql");
+const { sql, dbConfig } = require("../dbConfig");
 
 // Register a new user
 async function registerUser(req, res) {

@@ -1,7 +1,6 @@
-const sql = require("mssql");
+const { sql, dbConfig } = require('../dbConfig');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const dbConfig = require('../dbConfig');
 
 // Register a new user
 async function registerUser(userData) {
@@ -152,57 +151,6 @@ async function getUserById(id) {
     }
   }
 
-}
-
-// Get all users with search
-async function getAllUsers(searchParams = {}) {
-  let connection;
-  try {
-    connection = await sql.connect(dbConfig);
-
-    let query = 'Select id, username, role from Users';
-    const conditions = [];
-    const request = connection.request();
-
-    if (searchParams.username) {
-      conditions.push('Lower(username) LIKE Lower(@search)');
-      request.input('search', sql.NVarChar, `%${searchParams.username.toLowerCase()}%`);
-    }
-
-    if (searchParams.role) {
-      conditions.push('Lower(role) = Lower(@role)');
-      request.input('role', sql.NVarChar, searchParams.role);
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    query += ' ORDER BY username';
-
-    console.log('Executing SQL query:', query); // Debug log
-    console.log('Search params received:', searchParams); // Debug log
-    console.log('SQL parameters:', {
-      id: searchParams.id,
-      search: searchParams.search ? `%${searchParams.search}%` : undefined,
-      role: searchParams.role ? `%${searchParams.role}%` : undefined
-    }); // Debug log
-
-    const result = await request.query(query);
-    console.log('SQL query result count:', result.recordset.length); // Debug log
-    return result.recordset;
-  } catch (error) {
-    console.error('Database error:', error);
-    throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
-  }
 }
 
 // Update user by ID

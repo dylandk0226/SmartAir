@@ -2,48 +2,58 @@ const sql = require('mssql');
 require('dotenv').config();
 
 const dbConfig = {
-  server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT) || 1433,
+  server: process.env.DB_SERVER,
+  database: process.env.DB_DATABASE,
   options: {
     encrypt: true,
-    trustServerCertificate: false,
+    trustServerCertificate: true,
     enableArithAbort: true,
-    connectionTimeout: 30000,
-    requestTimeout: 30000
   },
   pool: {
     max: 10,
     min: 0,
-    idleTimeoutMillis: 30000
-  }
+    idleTimeoutMillis: 30000,
+    acquireTimeoutMillis: 30000,
+  },
 };
 
-let pool = null;
+let pool;
 
 async function getConnection() {
   try {
-    if (pool) return pool;
-    pool = await sql.connect(config);
-    console.log('Connected to Azure SQL Database');
+    if (!pool) {
+      pool = await sql.connect(dbConfig);
+      console.log('Database connection pool created');
+      
+      pool.on('error', err => {
+        console.error('Database pool error:', err);
+        pool = null;
+      });
+    }
     return pool;
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('Failed to create database pool:', error);
     throw error;
   }
 }
 
-async function closeConnection() {
+async function closePool() {
   try {
     if (pool) {
       await pool.close();
       pool = null;
+      console.log('Database connection pool closed');
     }
   } catch (error) {
-    console.error('Error closing connection:', error);
+    console.error('Error closing pool:', error);
   }
 }
 
-module.exports = dbConfig;
+module.exports = {
+  sql,
+  dbConfig,
+  getConnection,
+  closePool,
+};

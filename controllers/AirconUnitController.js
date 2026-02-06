@@ -1,8 +1,6 @@
 const { parse } = require("dotenv");
-const dbConfig = require("../dbConfig");
+const { sql, dbConfig } = require('../dbConfig');
 const AirconUnitModel = require ("../models/AirconUnitModel");
-const sql = require('mssql');
-
 //format date to yyyy-mm-dd
 function formatDate(date){
     const d = new Date(date);

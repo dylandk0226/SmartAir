@@ -1,12 +1,11 @@
-const sql = require("mssql");
-const dbConfig = require("../dbConfig");
+const { sql, dbConfig } = require('../dbConfig');
 
 // Get all Service Records
 async function getAllServiceRecords() {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords";
         const result = await connection.request().query(query);
         return result.recordset;
     } catch (error) {
@@ -30,7 +29,7 @@ async function getServiceRecordById(id) {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE id = @id";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE id = @id";
         const request = connection.request();
         request.input("id", sql.Int, id);
         const result = await request.query(query);
@@ -60,7 +59,7 @@ async function getServiceRecordsByAirconUnitId(airconUnitId) {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE aircon_unit_id = @aircon_unit_id";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE aircon_unit_id = @aircon_unit_id";
         const request = connection.request();
         request.input("aircon_unit_id", sql.Int, airconUnitId);
         const result = await request.query(query);
@@ -85,7 +84,7 @@ async function getServiceRecordsByTechnicianId(technicianId) {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE technician_id = @technician_id";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE technician_id = @technician_id";
         const request = connection.request();
         request.input("technician_id", sql.Int, technicianId);
         const result = await request.query(query);
@@ -110,7 +109,7 @@ async function getServiceRecordsByStatus(status) {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE status = @status";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE status = @status";
         const request = connection.request();
         request.input("status", sql.NVarChar, status);
         const result = await request.query(query);
@@ -135,7 +134,7 @@ async function getServiceRecordsByDateRange(startDate, endDate) {
     let connection;
     try {
         connection = await sql.connect(dbConfig);
-        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE service_date BETWEEN @startDate AND @endDate";
+        const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE service_date BETWEEN @startDate AND @endDate";
         const request = connection.request();
         request.input("startDate", sql.Date, startDate);
         request.input("endDate", sql.Date, endDate);
@@ -163,9 +162,9 @@ async function getServiceRecordsByDueDate(isOverdue = false) {
         connection = await sql.connect(dbConfig);
         let query;
         if (isOverdue) {
-            query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE next_due_date < CAST(GETDATE() AS DATE) AND status != 'completed'";
+            query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE next_due_date < CAST(GETDATE() AS DATE) AND status != 'completed'";
         } else {
-            query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE next_due_date >= CAST(GETDATE() AS DATE) AND status != 'completed' ORDER BY next_due_date ASC";
+            query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE next_due_date >= CAST(GETDATE() AS DATE) AND status != 'completed' ORDER BY next_due_date ASC";
         }
         const request = connection.request();
         request.input("currentDate", sql.Date, new Date());
@@ -192,7 +191,7 @@ async function getServiceRecordsWithFilters(filters) {
     try {
         connection = await sql.connect(dbConfig);
 
-        let query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status FROM ServiceRecords WHERE 1=1";
+        let query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE 1=1";
         const request = connection.request();
 
         // Apply filters
@@ -245,8 +244,8 @@ async function createServiceRecord(serviceRecordData) {
     try {
         connection = await sql.connect(dbConfig);
         const query = `
-        INSERT INTO ServiceRecords (aircon_unit_id, service_date, description, technician_id, next_due_date, status)
-        VALUES (@aircon_unit_id, @service_date, @description, @technician_id, @next_due_date, @status);
+        INSERT INTO ServiceRecords (aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost)
+        VALUES (@aircon_unit_id, @service_date, @description, @technician_id, @next_due_date, @status, @cost);
         SELECT SCOPE_IDENTITY() AS id;
         `;
         
@@ -257,6 +256,7 @@ async function createServiceRecord(serviceRecordData) {
         request.input("technician_id", sql.Int, serviceRecordData.technician_id);
         request.input("next_due_date", sql.Date, serviceRecordData.next_due_date);
         request.input("status", sql.NVarChar, serviceRecordData.status);
+        request.input("cost", sql.Decimal(10, 2), serviceRecordData.cost || 0);
         
         const result = await request.query(query);
         const newServiceRecordId = result.recordset[0].id;
@@ -285,7 +285,7 @@ async function updateServiceRecord(id, serviceRecordData) {
         
         const query = `UPDATE ServiceRecords
         SET aircon_unit_id = @aircon_unit_id, service_date = @service_date, description = @description, 
-        technician_id = @technician_id, next_due_date = @next_due_date, status = @status
+        technician_id = @technician_id, next_due_date = @next_due_date, status = @status, cost = @cost
         WHERE id = @id;
         `;
         
@@ -297,6 +297,7 @@ async function updateServiceRecord(id, serviceRecordData) {
         request.input("technician_id", sql.Int, serviceRecordData.technician_id);
         request.input("next_due_date", sql.Date, serviceRecordData.next_due_date);
         request.input("status", sql.NVarChar, serviceRecordData.status);
+        request.input("cost", sql.Decimal(10, 2), serviceRecordData.cost || 0);
         
         await request.query(query);
         return await getServiceRecordById(id);
