@@ -33,7 +33,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 // Users
 app.post("/api/register", userController.registerUser);
@@ -123,10 +123,13 @@ app.put('/api/booking-assignments/:id', authenticateToken, validateUserPermissio
 app.put('/api/booking-assignments/:id/status', authenticateToken, validateUserPermission('bookingAssignments', 'update'), validateBookingAssignmentId, BookingAssignmentController.updateAssignmentStatus);
 app.delete('/api/booking-assignments/:id', authenticateToken, validateUserPermission('bookingAssignments', 'delete'), validateBookingAssignmentId, BookingAssignmentController.deleteBookingAssignment);
 
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'SmartAir API is running' });
+});
 
-
-app.get('/', (req, res) => {
-  res.send('SmartAir API is running.');
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
 
 app.listen(PORT, () => {

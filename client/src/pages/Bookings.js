@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
 import { getStatusColor } from '../utils/statusColors';
@@ -17,29 +17,8 @@ const Bookings = () => {
     serviceType: 'all',
   });
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [bookings, filters]);
-
-  const loadBookings = async () => {
-    try {
-      setLoading(true);
-      const data = await adminService.getAllBookings();
-      setBookings(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading bookings:', err);
-      setError('Failed to load bookings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...bookings];
 
     if (filters.search) {
@@ -59,7 +38,31 @@ const Bookings = () => {
     }
 
     setFilteredBookings(filtered);
+  }, [bookings, filters]);
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  const loadBookings = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllBookings();
+      setBookings(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading bookings:', err);
+      setError('Failed to load bookings');
+    } finally {
+      setLoading(false);
+    }
   };
+
+
 
   const handleFilterChange = (e) => {
     setFilters({

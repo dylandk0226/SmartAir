@@ -14,6 +14,7 @@ import Bookings from './pages/Bookings';
 import BookingForm from './pages/BookingForm';
 import ServiceRecords from './pages/ServiceRecords';
 import Users from './pages/Users';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -134,6 +135,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <BookingForm />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Profile Route */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

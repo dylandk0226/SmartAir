@@ -7,7 +7,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "client": "cd client && npm start",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm install && npm run build",
+    "install-all": "npm install && cd client && npm install"
   },
   "repository": {
     "type": "git",
@@ -20,12 +21,16 @@
     "url": "https://github.com/dylandk0226/SmartAir_Staging/issues"
   },
   "homepage": "https://github.com/dylandk0226/SmartAir_Staging#readme",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1",
+    "express": "^4.21.2",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.2.0"

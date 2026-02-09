@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import adminService from '../services/adminService';
 
@@ -31,17 +31,28 @@ const BookingForm = () => {
     issue_description: '',
   });
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedCustomer) {
-      loadCustomerData(selectedCustomer);
+  const loadCustomerData = useCallback(async (custId) => {
+    try {
+      const customer = await adminService.getCustomerById(custId);
+      const units = await adminService.getAllAirconUnits();
+      const customerUnits = units.filter(unit => unit.customer_id === parseInt(custId));
+      
+      setAirconUnits(customerUnits);
+      
+      if (!isEditMode) {
+        setFormData(prev => ({
+          ...prev,
+          customer_id: custId,
+          service_address: customer.address || '',
+          contact_phone: customer.phone || '',
+        }));
+      }
+    } catch (err) {
+      console.error('Error loading customer data:', err);
     }
-  }, [selectedCustomer]);
+  }, [isEditMode]);
 
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -77,28 +88,19 @@ const BookingForm = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isEditMode, bookingId, customerId, loadCustomerData]);
 
-  const loadCustomerData = async (custId) => {
-    try {
-      const customer = await adminService.getCustomerById(custId);
-      const units = await adminService.getAllAirconUnits();
-      const customerUnits = units.filter(unit => unit.customer_id === parseInt(custId));
-      
-      setAirconUnits(customerUnits);
-      
-      if (!isEditMode) {
-        setFormData(prev => ({
-          ...prev,
-          customer_id: custId,
-          service_address: customer.address || '',
-          contact_phone: customer.phone || '',
-        }));
-      }
-    } catch (err) {
-      console.error('Error loading customer data:', err);
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    if (selectedCustomer) {
+      loadCustomerData(selectedCustomer);
     }
-  };
+  }, [selectedCustomer, loadCustomerData]);
+
+
 
   const handleCustomerChange = (e) => {
     const custId = e.target.value;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import adminService from '../services/adminService';
 import { getStatusColor } from '../utils/statusColors';
@@ -64,33 +64,8 @@ const ServiceRecords = () => {
     setEnrichedRecords(enriched);
   }, [serviceRecords, technicians, airconUnits, customers]);
 
-  useEffect(() => {
-    applyFilters();
-  }, [enrichedRecords, filters]);
 
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      const [records, techs, units, custs] = await Promise.all([
-        adminService.getAllServiceRecords(),
-        adminService.getAllTechnicians(),
-        adminService.getAllAirconUnits(),
-        adminService.getAllCustomers(),
-      ]);
-      setServiceRecords(records);
-      setTechnicians(techs);
-      setAirconUnits(units);
-      setCustomers(custs);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading service records:', err);
-      setError('Failed to load service records');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...enrichedRecords];
 
     if (filters.search) {
@@ -116,7 +91,35 @@ const ServiceRecords = () => {
     }
 
     setFilteredRecords(filtered);
+  }, [enrichedRecords, filters]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      const [records, techs, units, custs] = await Promise.all([
+        adminService.getAllServiceRecords(),
+        adminService.getAllTechnicians(),
+        adminService.getAllAirconUnits(),
+        adminService.getAllCustomers(),
+      ]);
+      setServiceRecords(records);
+      setTechnicians(techs);
+      setAirconUnits(units);
+      setCustomers(custs);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading service records:', err);
+      setError('Failed to load service records');
+    } finally {
+      setLoading(false);
+    }
   };
+
+
 
   const handleFilterChange = (e) => {
     setFilters({

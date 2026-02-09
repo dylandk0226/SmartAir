@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import adminService from '../services/adminService';
 import { getStatusColor } from '../utils/statusColors';
@@ -17,47 +17,8 @@ const CustomerDetail = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [statusModal, setStatusModal] = useState({ open: false, bookingId: null, currentStatus: '' });
 
-  useEffect(() => {
-    loadCustomerData();
-  }, [id, location.key]);
 
-  useEffect(() => {
-    const hash = location.hash.replace('#', '');
-    if (hash && ['profile', 'aircon', 'bookings', 'service'].includes(hash)) {
-      setActiveTab(hash);
-    } else if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab);
-    }
-  }, [location.hash, location.state]);
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      pending: 'Pending',
-      confirmed: 'Confirmed',
-      assigned: 'Assigned',
-      in_progress: 'In Progress',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-    };
-    return labels[status] || status;
-  };
-
-  const handleEditBooking = (bookingId, customerId) => {
-    navigate('/bookings/new', { state: { bookingId, customerId } });
-  };
-
-  const handleStatusUpdate = async (newStatus) => {
-    try {
-      await adminService.updateBookingStatus(statusModal.bookingId, newStatus);
-      setStatusModal({ open: false, bookingId: null, currentStatus: '' });
-      await loadCustomerData();
-    } catch (err) {
-      console.error('Error updating status:', err);
-      setError('Failed to update status');
-    }
-  };
-
-  const loadCustomerData = async () => {
+  const loadCustomerData = useCallback(async () => {
     try {
       setError(null);
 
@@ -108,7 +69,49 @@ const CustomerDetail = () => {
     } finally {
       setLoading(false);
     }
+  }, [id]);
+
+  useEffect(() => {
+    loadCustomerData();
+  }, [id, location.key, loadCustomerData]);
+
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    if (hash && ['profile', 'aircon', 'bookings', 'service'].includes(hash)) {
+      setActiveTab(hash);
+    } else if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.hash, location.state]);
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      assigned: 'Assigned',
+      in_progress: 'In Progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+    };
+    return labels[status] || status;
   };
+
+  const handleEditBooking = (bookingId, customerId) => {
+    navigate('/bookings/new', { state: { bookingId, customerId } });
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    try {
+      await adminService.updateBookingStatus(statusModal.bookingId, newStatus);
+      setStatusModal({ open: false, bookingId: null, currentStatus: '' });
+      await loadCustomerData();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError('Failed to update status');
+    }
+  };
+
+
 
   if (loading) {
     return (
