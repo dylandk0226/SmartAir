@@ -111,8 +111,13 @@ const Users = () => {
     
     if (!resetPasswordData.newPassword || resetPasswordData.newPassword.trim() === '') {
       errors.newPassword = 'New password is required';
-    } else if (resetPasswordData.newPassword.length < 6) {
-      errors.newPassword = 'Password must be at least 6 characters';
+    } else if (resetPasswordData.newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters';
+    } else {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(resetPasswordData.newPassword)) {
+        errors.newPassword = 'Password must contain at least 1 uppercase, 1 lowercase, and 1 number';
+      }
     }
     
     if (resetPasswordData.newPassword !== resetPasswordData.confirmPassword) {
@@ -270,7 +275,7 @@ const Users = () => {
     try {
       setSubmitLoading(true);
       await adminService.resetUserPassword(selectedUser.id, {
-        newPassword: resetPasswordData.newPassword,
+        password: resetPasswordData.newPassword,
       });
       setSubmitSuccess('Password reset successfully!');
       

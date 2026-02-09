@@ -16,8 +16,8 @@ async function registerUser(req, res) {
 
     const userRole = role || 'Admin';
     
-    if (!['Admin', 'Technician'].includes(userRole)) {
-      return res.status(400).json({ error: "Role must be either Admin or Technician" });
+    if (!['Admin', 'Technician', 'Customer'].includes(userRole)) {
+      return res.status(400).json({ error: "Role must be Admin, Technician, or Customer" });
     }
 
     // If registering as Technician, validate additional fields
@@ -266,8 +266,8 @@ async function updateUser(req, res) {
       return res.status(400).json({ error: "Username and role are required" });
     }
     
-    if (!['Admin', 'Technician'].includes(role)) {
-      return res.status(400).json({ error: "Role must be either Admin or Technician" });
+    if (!['Admin', 'Technician', 'Customer'].includes(role)) {
+      return res.status(400).json({ error: "Role must be Admin, Technician, or Customer" });
     }
 
     const existingUser = await userModel.getUserByUsername(username);
@@ -329,7 +329,14 @@ async function resetUserPassword(req, res) {
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters long" });
+      return res.status(400).json({ error: "Password must be at least 8 characters long" });
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ 
+        error: "Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number" 
+      });
     }
 
     const result = await userModel.resetUserPassword(userId, password);

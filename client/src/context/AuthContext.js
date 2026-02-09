@@ -26,6 +26,11 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
   
+  const register = async (userData) => {
+    const data = await authService.registerCustomer(userData);
+    return data;
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -41,6 +46,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    register,
     logout,
     isAdmin,
     isTechnician,
