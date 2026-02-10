@@ -1,20 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import adminService from '../services/adminService';
 import { getStatusColor } from '../utils/statusColors';
 
 const Bookings = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [bookings, setBookings] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusModal, setStatusModal] = useState({ open: false, bookingId: null, currentStatus: '' });
   
+  // Check if coming from Technicians page
+  const technicianFilter = location.state?.technicianId || null;
+  const technicianName = location.state?.technicianName || '';
+  
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
     serviceType: 'all',
+    technicianId: technicianFilter || 'all',
   });
 
 
@@ -37,6 +44,12 @@ const Bookings = () => {
       filtered = filtered.filter(booking => booking.service_type === filters.serviceType);
     }
 
+    if (filters.technicianId !== 'all') {
+      filtered = filtered.filter(booking => 
+        booking.technician_id === parseInt(filters.technicianId)
+      );
+    }
+
     setFilteredBookings(filtered);
   }, [bookings, filters]);
 
@@ -51,8 +64,12 @@ const Bookings = () => {
   const loadBookings = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getAllBookings();
-      setBookings(data);
+      const [bookingsData, techniciansData] = await Promise.all([
+        adminService.getAllBookings(),
+        adminService.getAllTechnicians()
+      ]);
+      setBookings(bookingsData);
+      setTechnicians(techniciansData);
       setError(null);
     } catch (err) {
       console.error('Error loading bookings:', err);
@@ -209,7 +226,7 @@ const Bookings = () => {
 
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="p-6 border-b border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
                   Search
@@ -266,6 +283,26 @@ const Bookings = () => {
                   <option value="Gas Top-Up">Gas Top-Up</option>
                 </select>
               </div>
+
+              <div>
+                <label htmlFor="technicianId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Technician
+                </label>
+                <select
+                  id="technicianId"
+                  name="technicianId"
+                  value={filters.technicianId}
+                  onChange={handleFilterChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="all">All Technicians</option>
+                  {technicians.map(tech => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -293,6 +330,9 @@ const Bookings = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date & Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Technician
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -328,6 +368,24 @@ const Bookings = () => {
                           })() : 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500">{booking.preferred_time || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {booking.technician_id ? (
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                              <span className="text-xs font-medium text-purple-600">
+                                {technicians.find(t => t.id === booking.technician_id)?.name?.charAt(0)?.toUpperCase() || 'T'}
+                              </span>
+                            </div>
+                            <div className="ml-2">
+                              <div className="text-sm font-medium text-gray-900">
+                                {technicians.find(t => t.id === booking.technician_id)?.name || 'Unknown'}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400 italic">Not assigned</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>

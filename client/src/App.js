@@ -13,6 +13,7 @@ import AirconUnitForm from './pages/AirconUnitForm';
 import Bookings from './pages/Bookings';
 import BookingForm from './pages/BookingForm';
 import ServiceRecords from './pages/ServiceRecords';
+import Technicians from './pages/Technicians';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 
@@ -108,6 +109,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Edit/View Booking - Uses BookingForm with bookingId from URL param */}
+            <Route
+              path="/bookings/:id"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <BookingForm />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes - Service Records */}
             <Route
@@ -115,6 +125,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <ServiceRecords />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes - Technicians */}
+            <Route
+              path="/technicians"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <Technicians />
                 </ProtectedRoute>
               }
             />

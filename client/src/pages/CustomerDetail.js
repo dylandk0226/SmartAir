@@ -11,6 +11,7 @@ const CustomerDetail = () => {
   const [airconUnits, setAirconUnits] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [serviceRecords, setServiceRecords] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -31,10 +32,11 @@ const CustomerDetail = () => {
 
       setCustomer(customerData);
 
-      const [airconUnitsResult, bookingsResult, serviceRecordsResult] = await Promise.allSettled([
+      const [airconUnitsResult, bookingsResult, serviceRecordsResult, techniciansResult] = await Promise.allSettled([
         adminService.getAllAirconUnits(),
         adminService.getAllBookings(),
         adminService.getAllServiceRecords(),
+        adminService.getAllTechnicians(),
       ]);
 
       const allAirconUnits = airconUnitsResult.status === 'fulfilled' ? airconUnitsResult.value : [];
@@ -53,6 +55,9 @@ const CustomerDetail = () => {
       
       setServiceRecords(customerServiceRecords);
 
+      const allTechnicians = techniciansResult.status === 'fulfilled' ? techniciansResult.value : [];
+      setTechnicians(allTechnicians);
+
       if (airconUnitsResult.status === 'rejected') {
         console.warn('Failed to load aircon units:', airconUnitsResult.reason);
       }
@@ -61,6 +66,9 @@ const CustomerDetail = () => {
       }
       if (serviceRecordsResult.status === 'rejected') {
         console.warn('Failed to load service records:', serviceRecordsResult.reason);
+      }
+      if (techniciansResult.status === 'rejected') {
+        console.warn('Failed to load technicians:', techniciansResult.reason);
       }
       
     } catch (error) {
@@ -466,6 +474,20 @@ const CustomerDetail = () => {
                           <div>
                             <dt className="text-sm text-gray-500">Contact Phone:</dt>
                             <dd className="text-sm font-medium text-gray-900">{booking.contact_phone || 'N/A'}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-sm text-gray-500">Assigned Technician:</dt>
+                            <dd className="text-sm font-medium text-gray-900">
+                              {booking.technician_id ? (
+                                <div className="flex items-center">
+                                  <span>
+                                    {technicians.find(t => t.id === booking.technician_id)?.name || 'Unknown'}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">Not assigned</span>
+                              )}
+                            </dd>
                           </div>
                           {booking.unit_brand && (
                             <div>

@@ -4,9 +4,9 @@ import adminService from '../services/adminService';
 
 const BookingForm = () => {
   const navigate = useNavigate();
-  const { customerId: customerIdParam } = useParams();
+  const { customerId: customerIdParam, id: bookingIdParam } = useParams();
   const location = useLocation();
-  const bookingId = location.state?.bookingId;
+  const bookingId = bookingIdParam || location.state?.bookingId;
   const customerId = customerIdParam || location.state?.customerId;
   const isEditMode = !!bookingId;
 
@@ -15,6 +15,7 @@ const BookingForm = () => {
   const [success, setSuccess] = useState('');
   const [customers, setCustomers] = useState([]);
   const [airconUnits, setAirconUnits] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(customerId || '');
 
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const BookingForm = () => {
     aircon_brand: '',
     aircon_model: '',
     issue_description: '',
+    technician_id: '',
   });
 
   const loadCustomerData = useCallback(async (custId) => {
@@ -70,6 +72,7 @@ const BookingForm = () => {
           aircon_brand: booking.aircon_brand || '',
           aircon_model: booking.aircon_model || '',
           issue_description: booking.issue_description || '',
+          technician_id: booking.technician_id || '',
         });
         setSelectedCustomer(booking.customer_id);
       }
@@ -78,6 +81,10 @@ const BookingForm = () => {
         const allCustomers = await adminService.getAllCustomers();
         setCustomers(allCustomers);
       }
+
+      // Load technicians
+      const allTechnicians = await adminService.getAllTechnicians();
+      setTechnicians(allTechnicians);
 
       if (customerId) {
         await loadCustomerData(customerId);
@@ -432,6 +439,29 @@ const BookingForm = () => {
               </div>
             </div>
           )}
+
+          {/* Assign Technician */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Assign Technician
+            </label>
+            <select
+              name="technician_id"
+              value={formData.technician_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">-- No Technician Assigned --</option>
+              {technicians.map(tech => (
+                <option key={tech.id} value={tech.id}>
+                  {tech.name} - {tech.email}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              You can assign a technician now or leave it for later
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

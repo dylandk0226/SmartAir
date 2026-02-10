@@ -50,19 +50,10 @@ async function getBookingById(id) {
                 c.email as customer_email,
                 au.brand as unit_brand,
                 au.model as unit_model,
-                au.serial_number,
-                ba.id as assignment_id,
-                ba.technician_id,
-                ba.scheduled_date,
-                ba.scheduled_time,
-                ba.status as assignment_status,
-                t.name as technician_name,
-                t.phone as technician_phone
+                au.serial_number
             FROM Bookings b
             INNER JOIN Customers c ON b.customer_id = c.id
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
-            LEFT JOIN BookingAssignments ba ON b.id = ba.booking_id
-            LEFT JOIN Technicians t ON ba.technician_id = t.id
             WHERE b.id = @id
         `;
         const request = connection.request();
@@ -97,17 +88,9 @@ async function getBookingsByCustomerId(customerId) {
             SELECT 
                 b.*,
                 au.brand as unit_brand,
-                au.model as unit_model,
-                ba.technician_id,
-                ba.scheduled_date,
-                ba.scheduled_time,
-                ba.status as assignment_status,
-                t.name as technician_name,
-                t.phone as technician_phone
+                au.model as unit_model
             FROM Bookings b
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
-            LEFT JOIN BookingAssignments ba ON b.id = ba.booking_id
-            LEFT JOIN Technicians t ON ba.technician_id = t.id
             WHERE b.customer_id = @customer_id
             ORDER BY b.created_at DESC
         `;
@@ -178,14 +161,10 @@ async function getBookingsWithFilters(filters) {
                 c.phone as customer_phone,
                 c.email as customer_email,
                 au.brand as unit_brand,
-                au.model as unit_model,
-                ba.technician_id,
-                t.name as technician_name
+                au.model as unit_model
             FROM Bookings b
             INNER JOIN Customers c ON b.customer_id = c.id
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
-            LEFT JOIN BookingAssignments ba ON b.id = ba.booking_id
-            LEFT JOIN Technicians t ON ba.technician_id = t.id
             WHERE 1=1
         `;
         const request = connection.request();
@@ -267,12 +246,12 @@ async function createBooking(bookingData) {
             INSERT INTO Bookings (
                 customer_id, aircon_unit_id, service_type, preferred_date, preferred_time,
                 service_address, postal_code, contact_phone, aircon_brand, aircon_model,
-                issue_description, status
+                issue_description, technician_id, status
             )
             VALUES (
                 @customer_id, @aircon_unit_id, @service_type, @preferred_date, @preferred_time,
                 @service_address, @postal_code, @contact_phone, @aircon_brand, @aircon_model,
-                @issue_description, 'pending'
+                @issue_description, @technician_id, 'pending'
             );
             SELECT SCOPE_IDENTITY() AS id;
         `;
@@ -289,6 +268,7 @@ async function createBooking(bookingData) {
         request.input("aircon_brand", sql.VarChar, bookingData.aircon_brand || null);
         request.input("aircon_model", sql.VarChar, bookingData.aircon_model || null);
         request.input("issue_description", sql.Text, bookingData.issue_description || null);
+        request.input("technician_id", sql.Int, bookingData.technician_id || null);
 
         const result = await request.query(query);
         const newBookingId = result.recordset[0].id;
@@ -325,6 +305,7 @@ async function updateBooking(id, bookingData) {
                 aircon_brand = @aircon_brand,
                 aircon_model = @aircon_model,
                 issue_description = @issue_description,
+                technician_id = @technician_id,
                 status = @status,
                 updated_at = GETDATE()
             WHERE id = @id
@@ -341,6 +322,7 @@ async function updateBooking(id, bookingData) {
         request.input("aircon_brand", sql.VarChar, bookingData.aircon_brand || null);
         request.input("aircon_model", sql.VarChar, bookingData.aircon_model || null);
         request.input("issue_description", sql.Text, bookingData.issue_description || null);
+        request.input("technician_id", sql.Int, bookingData.technician_id || null);
         request.input("status", sql.VarChar, bookingData.status);
 
         await request.query(query);

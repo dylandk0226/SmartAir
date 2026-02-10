@@ -66,6 +66,10 @@ const bookingSchema = Joi.object({
         "string.min": "Issue description must be at least 5 characters long",
         "string.max": "Issue description cannot exceed 1000 characters",
     }),
+
+    technician_id: Joi.number().integer().optional().allow(null, "").messages({
+        "number.base": "Technician ID must be a number",
+    }),
 });
 
 const bookingUpdateSchema = Joi.object({
@@ -122,6 +126,10 @@ const bookingUpdateSchema = Joi.object({
     status: Joi.string().valid("pending", "confirmed", "assigned", "in_progress", "completed", "cancelled").optional().messages({
         "string.base": "Status must be a string",
         "any.only": "Status must be one of: pending, confirmed, assigned, in_progress, completed, cancelled",
+    }),
+
+    technician_id: Joi.number().integer().optional().allow(null, "").messages({
+        "number.base": "Technician ID must be a number",
     }),
 });
 
