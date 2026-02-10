@@ -30,6 +30,7 @@ const Profile = () => {
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadProfileData();
   }, [user]);
