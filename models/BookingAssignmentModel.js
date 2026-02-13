@@ -1,10 +1,9 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { sql, getConnection } = require('../dbConfig');
 
 //Get all Booking Assignments
 async function getAllBookingAssignments() {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -21,7 +20,7 @@ async function getAllBookingAssignments() {
             INNER JOIN Technicians t ON ba.technician_id = t.id
             ORDER BY ba.scheduled_date DESC, ba.assigned_date DESC
         `;
-        const result = await connection.request().query(query);
+        const result = await pool.request().query(query);
 
         console.log("Query result:", result.recordset);
 
@@ -29,22 +28,13 @@ async function getAllBookingAssignments() {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking Assignment by ID
 async function getBookingAssignmentById(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -65,7 +55,7 @@ async function getBookingAssignmentById(id) {
             INNER JOIN Technicians t ON ba.technician_id = t.id
             WHERE ba.id = @id
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         const result = await request.query(query);
 
@@ -77,22 +67,13 @@ async function getBookingAssignmentById(id) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking Assignment by Booking ID
 async function getBookingAssignmentByBookingId(bookingId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -103,7 +84,7 @@ async function getBookingAssignmentByBookingId(bookingId) {
             INNER JOIN Technicians t ON ba.technician_id = t.id
             WHERE ba.booking_id = @booking_id
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("booking_id", sql.Int, bookingId);
         const result = await request.query(query);
 
@@ -115,22 +96,13 @@ async function getBookingAssignmentByBookingId(bookingId) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking Assignments by Technician ID
 async function getBookingAssignmentsByTechnicianId(technicianId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -145,29 +117,20 @@ async function getBookingAssignmentsByTechnicianId(technicianId) {
             WHERE ba.technician_id = @technician_id
             ORDER BY ba.scheduled_date DESC
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("technician_id", sql.Int, technicianId);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking Assignments by Status
 async function getBookingAssignmentsByStatus(status) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -182,29 +145,20 @@ async function getBookingAssignmentsByStatus(status) {
             WHERE ba.status = @status
             ORDER BY ba.scheduled_date ASC
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("status", sql.VarChar, status);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking Assignments by Date
 async function getBookingAssignmentsByDate(date) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 ba.*,
@@ -220,32 +174,23 @@ async function getBookingAssignmentsByDate(date) {
             WHERE ba.scheduled_date = @date
             ORDER BY ba.scheduled_time
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("date", sql.Date, date);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Create Booking Assignment
 async function createBookingAssignment(assignmentData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const bookingCheckQuery = "SELECT id FROM Bookings WHERE id = @booking_id";
-        const bookingCheck = connection.request();
+        const bookingCheck = pool.request();
         bookingCheck.input("booking_id", sql.Int, assignmentData.booking_id);
         const bookingResult = await bookingCheck.query(bookingCheckQuery);
 
@@ -254,7 +199,7 @@ async function createBookingAssignment(assignmentData) {
         }
 
         const techCheckQuery = "SELECT id FROM Technicians WHERE id = @technician_id";
-        const techCheck = connection.request();
+        const techCheck = pool.request();
         techCheck.input("technician_id", sql.Int, assignmentData.technician_id);
         const techResult = await techCheck.query(techCheckQuery);
 
@@ -262,7 +207,7 @@ async function createBookingAssignment(assignmentData) {
             throw new Error(`Technician with id ${assignmentData.technician_id} does not exist.`);
         }
 
-        const existingCheck = connection.request();
+        const existingCheck = pool.request();
         existingCheck.input("booking_id", sql.Int, assignmentData.booking_id);
         const existingResult = await existingCheck.query(
             "SELECT id FROM BookingAssignments WHERE booking_id = @booking_id"
@@ -282,7 +227,7 @@ async function createBookingAssignment(assignmentData) {
             SELECT SCOPE_IDENTITY() AS id;
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("booking_id", sql.Int, assignmentData.booking_id);
         request.input("technician_id", sql.Int, assignmentData.technician_id);
         request.input("scheduled_date", sql.Date, assignmentData.scheduled_date || null);
@@ -292,7 +237,7 @@ async function createBookingAssignment(assignmentData) {
         const result = await request.query(query);
         const newAssignmentId = result.recordset[0].id;
 
-        await connection.request()
+        await pool.request()
             .input("booking_id", sql.Int, assignmentData.booking_id)
             .query("UPDATE Bookings SET status = 'assigned', updated_at = GETDATE() WHERE id = @booking_id");
 
@@ -300,22 +245,13 @@ async function createBookingAssignment(assignmentData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Update Booking Assignment
 async function updateBookingAssignment(id, assignmentData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const query = `
             UPDATE BookingAssignments
@@ -330,7 +266,7 @@ async function updateBookingAssignment(id, assignmentData) {
             WHERE id = @id
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("technician_id", sql.Int, assignmentData.technician_id);
         request.input("scheduled_date", sql.Date, assignmentData.scheduled_date || null);
@@ -345,22 +281,13 @@ async function updateBookingAssignment(id, assignmentData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Update Assignment Status
 async function updateAssignmentStatus(id, status) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const query = `
             UPDATE BookingAssignments
@@ -368,7 +295,7 @@ async function updateAssignmentStatus(id, status) {
             WHERE id = @id
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("status", sql.VarChar, status);
 
@@ -377,7 +304,7 @@ async function updateAssignmentStatus(id, status) {
         if (status === 'completed') {
             const assignment = await getBookingAssignmentById(id);
             if (assignment) {
-                await connection.request()
+                await pool.request()
                     .input("booking_id", sql.Int, assignment.booking_id)
                     .query("UPDATE Bookings SET status = 'completed', updated_at = GETDATE() WHERE id = @booking_id");
             }
@@ -387,39 +314,22 @@ async function updateAssignmentStatus(id, status) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Delete Booking Assignment
 async function deleteBookingAssignment(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "DELETE FROM BookingAssignments WHERE id = @id";
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         await request.query(query);
         return { message: "Booking assignment deleted successfully!" };
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 

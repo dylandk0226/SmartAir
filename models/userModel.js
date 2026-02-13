@@ -1,12 +1,11 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { sql, getConnection } = require('../dbConfig');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Register a new user
 async function registerUser(userData) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     
@@ -15,7 +14,7 @@ async function registerUser(userData) {
     Select SCOPE_IDENTITY() as id;
     `;
     
-    const request = connection.request();
+    const request = pool.request();
     request.input('username', sql.NVarChar, userData.username);
     request.input('password_hash', sql.NVarChar, hashedPassword);
     request.input('role', sql.NVarChar, userData.role);
@@ -29,43 +28,33 @@ async function registerUser(userData) {
       role: userData.role
     };
 
-  } catch (error) {
-    console.error('Database error:', error);
-    throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
   }
-
 }
 
 // Get all users with optional search conditions
 async function getAllUsers(searchParams = {}) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     
     let query = 'Select id, username, role from Users';
     const conditions = [];
-    const request = connection.request();
+    const request = pool.request();
     
     if (searchParams.search) {
-      conditions.push('Lower(username) LIKE Lower(@search)');
+      conditions.push('LOWER(username) LIKE LOWER(@search)');
       request.input('search', sql.NVarChar, `%${searchParams.search.toLowerCase()}%`);
     }
     
     if (searchParams.username && !searchParams.search) {
-      conditions.push('Lower(username) LIKE Lower(@username_search)');
+      conditions.push('LOWER(username) LIKE LOWER(@username_search)');
       request.input('username_search', sql.NVarChar, `%${searchParams.username.toLowerCase()}%`);
     }
     
     if (searchParams.role && !searchParams.search) {
-      conditions.push('Lower(role) LIKE Lower(@role_search)');
+      conditions.push('LOWER(role) LIKE LOWER(@role_search)');
       request.input('role_search', sql.NVarChar, `%${searchParams.role.toLowerCase()}%`);
     }
     
@@ -89,24 +78,15 @@ async function getAllUsers(searchParams = {}) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
 }
 
 // Get user by username
 async function getUserByUsername(username) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     const query = 'Select * from Users where username = @username';
-    const request = connection.request();
+    const request = pool.request();
     request.input('username', sql.NVarChar, username);
     
     const result = await request.query(query);
@@ -115,25 +95,15 @@ async function getUserByUsername(username) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
-
 }
 
 // Get user by ID
 async function getUserById(id) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     const query = 'Select * from Users where id = @id';
-    const request = connection.request();
+    const request = pool.request();
     request.input('id', sql.Int, id);
     const result = await request.query(query);
     
@@ -141,25 +111,15 @@ async function getUserById(id) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
-
 }
 
 // Update user by ID
 async function updateUserById(id, userData) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     const query = `Update Users set username = @username, role = @role where id = @id`;
-    const request = connection.request();
+    const request = pool.request();
     request.input('id', sql.Int, id);
     request.input('username', sql.NVarChar, userData.username);
     request.input('role', sql.NVarChar, userData.role);
@@ -179,26 +139,16 @@ async function updateUserById(id, userData) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
-
 }
 
 // Reset user password
 async function resetUserPassword(id, newPassword) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const query = `Update Users set password_hash = @password_hash where id = @id`;
-    const request = connection.request();
+    const request = pool.request();
     request.input('id', sql.Int, id);
     request.input('password_hash', sql.NVarChar, hashedPassword);
     await request.query(query);
@@ -207,40 +157,30 @@ async function resetUserPassword(id, newPassword) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
-
 }
 
 // Delete user by ID
 async function deleteUserById(id) {
-  let connection;
   try {
-    connection = await sql.connect(dbConfig);
+    const pool = await getConnection();
 
         // First check if user is a technician and delete technician record if exists
     const checkTechnicianQuery = 'SELECT id FROM Technicians WHERE user_id = @userId';
-    const techRequest = connection.request();
+    const techRequest = pool.request();
     techRequest.input('userId', sql.Int, id);
     const techResult = await techRequest.query(checkTechnicianQuery);
     
     if (techResult.recordset.length > 0) {
       // Delete the technician record first
       const deleteTechnicianQuery = 'DELETE FROM Technicians WHERE user_id = @userId';
-      const deleteTechRequest = connection.request();
+      const deleteTechRequest = pool.request();
       deleteTechRequest.input('userId', sql.Int, id);
       await deleteTechRequest.query(deleteTechnicianQuery);
     }
 
     const query = 'Delete from Users where id = @id';
-    const request = connection.request();
+    const request = pool.request();
     request.input('id', sql.Int, id);
     
     await request.query(query);
@@ -248,14 +188,6 @@ async function deleteUserById(id) {
   } catch (error) {
     console.error('Database error:', error);
     throw error;
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
   }
 }
 

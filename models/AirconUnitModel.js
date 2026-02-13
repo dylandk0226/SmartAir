@@ -1,12 +1,12 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { pool } = require('mssql');
+const { sql, getConnection } = require('../dbConfig');
 
 //Get all AirconUnits
 async function getAllAirconUnits() {
-    let connection;
     try{
-        connection = await sql.connect (dbConfig);
+        const pool = await getConnection();
         const query = "Select id, brand, model, serial_number, customer_id, purchase_date, warranty_expiry, installation_address from AirconUnits";
-        const result = await connection.request().query(query);
+        const result = await pool.request().query(query);
 
         console.log("Query result:", result.recordset);
 
@@ -14,26 +14,16 @@ async function getAllAirconUnits() {
     } catch (error){
         console.error ("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 // Get AirconUnit by ID
 
 async function getAirconUnitById(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "Select id, brand, model, serial_number, customer_id, purchase_date, warranty_expiry, installation_address from AirconUnits where id = @id";
-        const request = connection.request();
+        const request = pool.request();
         request.input ("id", sql.Int, id);
         const result = await request.query(query);
 
@@ -45,22 +35,13 @@ async function getAirconUnitById(id) {
     } catch (error){
         console.error ("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 // Create new AirconUnit
 async function createAirconUnit(AirconUnitData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const customerId = parseInt(AirconUnitData.customer_id);
         if (isNaN(customerId)){
@@ -68,7 +49,7 @@ async function createAirconUnit(AirconUnitData) {
         }
 
         const customerCheckQuery = "Select id from customers where id = @customer_id";
-        const checkRequest = connection.request();
+        const checkRequest = pool.request();
         checkRequest.input("customer_id", sql.Int, customerId);
         const customerResult = await checkRequest.query(customerCheckQuery);
 
@@ -82,7 +63,7 @@ async function createAirconUnit(AirconUnitData) {
         Select scope_identity() as id;
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("brand", sql.NVarChar, AirconUnitData.brand);
         request.input("model", sql.NVarChar, AirconUnitData.model);
         request.input("serial_number", sql.NVarChar, AirconUnitData.serial_number);
@@ -97,24 +78,14 @@ async function createAirconUnit(AirconUnitData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 // Update a AirconUnit by ID
 
 async function updateAirconUnit(id, AirconUnitData) {
-    let connection;
     try{
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const customerId = parseInt(AirconUnitData.customer_id);
         if (isNaN(customerId)){
@@ -122,7 +93,7 @@ async function updateAirconUnit(id, AirconUnitData) {
         }
 
         const customerCheckQuery = "Select id from customers where id = @customer_id";
-        const checkRequest = connection.request();
+        const checkRequest = pool.request();
         checkRequest.input("customer_id", sql.Int, customerId);
         const customerResult = await checkRequest.query(customerCheckQuery);
 
@@ -134,7 +105,7 @@ async function updateAirconUnit(id, AirconUnitData) {
         Set brand = @brand, model = @model, serial_number = @serial_number, customer_id = @customer_id, purchase_date = @purchase_date, warranty_expiry = @warranty_expiry, installation_address = @installation_address
         where id = @id;`;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("brand", sql.NVarChar, AirconUnitData.brand);
         request.input("model", sql.NVarChar, AirconUnitData.model);
@@ -149,43 +120,24 @@ async function updateAirconUnit(id, AirconUnitData) {
     } catch (error){
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 //Delete a AirconUnit by ID
 
 async function deleteAirconUnit(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "Delete from AirconUnits where id = @id";
 
-        const request = connection.request();
+        const request = pool.request();
         request.input ("id", sql.Int, id);
         await request.query(query);
         return {message: "Aircon unit deleted successfully!"};
     } catch (error){
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 

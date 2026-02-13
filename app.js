@@ -44,6 +44,7 @@ app.get('/api/users/:id', authenticateToken, validateUserPermission('users', 're
 app.put('/api/users/:id', authenticateToken, validateUserPermission('users', 'update'), userController.updateUser);
 app.delete("/api/users/:id", authenticateToken, blockResourceAccess('users'), validateUserPermission('users', 'delete'), userController.deleteUser);
 app.post("/api/users/:id/resetpassword", authenticateToken, blockResourceAccess('users'), validateUserPermission('users', 'update'), userController.resetUserPassword);
+app.put('/api/users/me/password', authenticateToken, userController.changeMyPassword);
 
 // Customer Account Management
 app.post("/api/customer/register", validateCustomerRegistration, CustomerController.registerCustomerAccount);
@@ -56,6 +57,10 @@ app.post('/api/customer/bookings', authenticateToken, validateBooking, CustomerC
 app.get('/api/customer/bookings/:id', authenticateToken, CustomerController.getMyBookingById);
 app.put('/api/customer/bookings/:id', authenticateToken, validateBookingUpdate, CustomerController.updateMyBooking);
 app.put('/api/customer/bookings/:id/cancel', authenticateToken, CustomerController.cancelMyBooking);
+app.get('/api/customer/availability', authenticateToken, CustomerController.getBookingAvailability);
+
+// Customer Service History
+app.get('/api/customer/service-records', authenticateToken, CustomerController.getMyServiceHistory);
 
 // Customers
 app.get('/api/customers', authenticateToken, validateUserPermission('customers', 'read'), CustomerController.getAllCustomers);
@@ -128,8 +133,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'SmartAir API is running' });
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+app.use((req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  } else {
+    res.status(404).json({ error: 'API endpoint not found' });
+  }
 });
 
 app.listen(PORT, () => {

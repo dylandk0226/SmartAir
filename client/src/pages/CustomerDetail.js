@@ -105,7 +105,7 @@ const CustomerDetail = () => {
   };
 
   const handleEditBooking = (bookingId, customerId) => {
-    navigate('/bookings/new', { state: { bookingId, customerId } });
+    navigate(`/bookings/${bookingId}`);
   };
 
   const handleStatusUpdate = async (newStatus) => {

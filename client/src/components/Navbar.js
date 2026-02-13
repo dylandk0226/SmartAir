@@ -1,14 +1,39 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated, isAdmin, isTechnician, isCustomer } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const isActive = (path) => {
+    if (path === '/bookings' || path === '/bookings/new') {
+      return location.pathname === path;
+    }
+
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const getNavLinkClass = (path) => {
+    return isActive(path)
+      ? "inline-flex items-center px-1 pt-1 text-sm font-bold text-gray-900"
+      : "inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900";
+  };
+
+  const getMobileNavLinkClass = (path) => {
+    return isActive(path)
+      ? "block pl-3 pr-4 py-2 text-base font-bold text-gray-900"
+      : "block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50";
   };
 
   return (
@@ -24,7 +49,7 @@ const Navbar = () => {
               <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
+                  className={getNavLinkClass('/dashboard')}
                 >
                   Dashboard
                 </Link>
@@ -34,25 +59,31 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/customers"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/customers')}
                     >
                       Customers
                     </Link>
                     <Link
                       to="/bookings"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/bookings')}
                     >
                       All Bookings
                     </Link>
                     <Link
                       to="/service-records"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/service-records')}
                     >
                       Service History
                     </Link>
                     <Link
+                      to="/technicians"
+                      className={getNavLinkClass('/technicians')}
+                    >
+                      Technicians
+                    </Link>
+                    <Link
                       to="/users"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/users')}
                     >
                       Users
                     </Link>
@@ -82,15 +113,21 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/bookings"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/bookings')}
                     >
                       My Bookings
                     </Link>
                     <Link
                       to="/bookings/new"
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                      className={getNavLinkClass('/bookings/new')}
                     >
                       New Booking
+                    </Link>
+                    <Link
+                      to="/service-history"
+                      className={getNavLinkClass('/service-history')}
+                    >
+                      Service History
                     </Link>
                   </>
                 )}
@@ -98,7 +135,7 @@ const Navbar = () => {
                 {/* Common Menu */}
                 <Link
                   to="/profile"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-primary-600"
+                  className={getNavLinkClass('/profile')}
                 >
                   Profile
                 </Link>
@@ -146,23 +183,26 @@ const Navbar = () => {
           <div className="pt-2 pb-3 space-y-1">
             <Link
               to="/dashboard"
-              className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              className={getMobileNavLinkClass('/dashboard')}
             >
               Dashboard
             </Link>
 
             {isAdmin && (
               <>
-                <Link to="/customers" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/customers" className={getMobileNavLinkClass('/customers')}>
                   Customers
                 </Link>
-                <Link to="/bookings" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/bookings" className={getMobileNavLinkClass('/bookings')}>
                   All Bookings
                 </Link>
-                <Link to="/service-records" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/service-records" className={getMobileNavLinkClass('/service-records')}>
                   Service History
                 </Link>
-                <Link to="/users" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/technicians" className={getMobileNavLinkClass('/technicians')}>
+                  Technicians
+                </Link>
+                <Link to="/users" className={getMobileNavLinkClass('/users')}>
                   Users
                 </Link>
               </>
@@ -181,16 +221,19 @@ const Navbar = () => {
 
             {isCustomer && (
               <>
-                <Link to="/bookings" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/bookings" className={getMobileNavLinkClass('/bookings')}>
                   My Bookings
                 </Link>
-                <Link to="/bookings/new" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+                <Link to="/bookings/new" className={getMobileNavLinkClass('/bookings/new')}>
                   New Booking
+                </Link>
+                <Link to="/service-history" className={getMobileNavLinkClass('/service-history')}>
+                  Service History
                 </Link>
               </>
             )}
 
-            <Link to="/profile" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50">
+            <Link to="/profile" className={getMobileNavLinkClass('/profile')}>
               Profile
             </Link>
           </div>

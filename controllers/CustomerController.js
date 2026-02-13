@@ -1,6 +1,7 @@
 const CustomerModel = require("../models/CustomerModel");
 const userModel = require("../models/userModel");
 const BookingModel = require("../models/BookingModel");
+const ServiceRecordModel = require("../models/ServiceRecordModel");
 const bcrypt = require("bcryptjs");
 
 //Get all customers
@@ -183,7 +184,7 @@ async function getMyProfile(req, res) {
     try {
         const userId = req.user.id;
         
-        const customer = await CustomerModel.getCustomerByUserId(userId);
+        const customer = await CustomerModel.getCustomerByUserIdWithAirconUnits(userId);
         if (!customer) {
             return res.status(404).json({ error: "Customer profile not found" });
         }
@@ -251,6 +252,50 @@ async function createMyBooking(req, res) {
     } catch (error) {
         console.error("Controller error:", error);
         res.status(500).json({ error: "Error creating booking" });
+    }
+}
+
+// Get booking availability for calendar view
+async function getBookingAvailability(req, res) {
+    try {
+        const { startDate, endDate } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        const bookings = await BookingModel.getBookingsWithFilters({
+            start_date: startDate,
+            end_date: endDate
+        });
+
+        const availabilityMap = {};
+
+        for (const b of bookings || []) {
+            if ((b.status || "").toLowerCase() === "cancelled") continue;
+
+            const dateObj = new Date(b.preferred_date);
+            if (isNaN(dateObj.getTime())) continue;
+
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+            const dd = String(dateObj.getDate()).padStart(2, "0");
+            const dateKey = `${yyyy}-${mm}-${dd}`;
+
+            if (!availabilityMap[dateKey]) {
+                availabilityMap[dateKey] = { morning: 0, afternoon: 0, evening: 0 };
+            }
+
+            const slot = (b.preferred_time || "").toLowerCase();
+            if (slot === "morning") availabilityMap[dateKey].morning += 1;
+            if (slot === "afternoon") availabilityMap[dateKey].afternoon += 1;
+            if (slot === "evening") availabilityMap[dateKey].evening += 1;
+        }
+
+        return res.json(availabilityMap);
+    } catch (error) {
+        console.error("Controller error:", error);
+        return res.status(500).json({ error: "Error retrieving availability" });
     }
 }
 
@@ -342,6 +387,24 @@ async function cancelMyBooking(req, res) {
     }
 }
 
+// Get service history for logged-in customer
+async function getMyServiceHistory(req, res) {
+    try {
+        const userId = req.user.id;
+        
+        const customer = await CustomerModel.getCustomerByUserId(userId);
+        if (!customer) {
+            return res.status(404).json({ error: "Customer profile not found" });
+        }
+
+        const serviceRecords = await ServiceRecordModel.getServiceRecordsByCustomerId(customer.id);
+        res.json(serviceRecords);
+    } catch (error) {
+        console.error("Controller error:", error);
+        res.status(500).json({ error: "Error retrieving service history" });
+    }
+}
+
 module.exports = {
     getAllCustomers,
     getCustomerById,
@@ -357,4 +420,6 @@ module.exports = {
     getMyBookingById,
     updateMyBooking,
     cancelMyBooking,
+    getMyServiceHistory,
+    getBookingAvailability,
 };

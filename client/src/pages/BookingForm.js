@@ -63,9 +63,9 @@ const BookingForm = () => {
         setFormData({
           customer_id: booking.customer_id,
           aircon_unit_id: booking.aircon_unit_id || '',
-          service_type: booking.service_type,
+          service_type: booking.service_type.toLowerCase(),
           preferred_date: booking.preferred_date,
-          preferred_time: booking.preferred_time,
+          preferred_time: booking.preferred_time.toLowerCase(),
           service_address: booking.service_address,
           postal_code: booking.postal_code || '',
           contact_phone: booking.contact_phone,
@@ -458,9 +458,6 @@ const BookingForm = () => {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-sm text-gray-500">
-              You can assign a technician now or leave it for later
-            </p>
           </div>
 
           <div>

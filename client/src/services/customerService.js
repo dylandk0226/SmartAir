@@ -11,6 +11,11 @@ const customerService = {
     return response.data;
   },
 
+  async changePassword(passwordData) {
+    const response = await api.put('/customer/profile/password', passwordData);
+    return response.data;
+  },
+
   async getMyBookings() {
     const response = await api.get('/customer/bookings');
     return response.data;
@@ -33,6 +38,18 @@ const customerService = {
 
   async cancelBooking(id) {
     const response = await api.put(`/customer/bookings/${id}/cancel`);
+    return response.data;
+  },
+
+  async getMyServiceHistory() {
+    const response = await api.get('/customer/service-records');
+    return response.data;
+  },
+
+  async getBookingAvailability(startDate, endDate) {
+    const response = await api.get('/customer/availability', {
+      params: { startDate, endDate }
+    });
     return response.data;
   },
 };

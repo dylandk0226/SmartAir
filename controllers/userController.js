@@ -16,8 +16,8 @@ async function registerUser(req, res) {
 
     const userRole = role || 'Admin';
     
-    if (!['Admin', 'Technician', 'Customer'].includes(userRole)) {
-      return res.status(400).json({ error: "Role must be Admin, Technician, or Customer" });
+    if (!['Admin', 'Technician'].includes(userRole)) {
+      return res.status(400).json({ error: "Role must be either Admin or Technician" });
     }
 
     // If registering as Technician, validate additional fields
@@ -329,14 +329,7 @@ async function resetUserPassword(req, res) {
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 8 characters long" });
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({ 
-        error: "Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number" 
-      });
+      return res.status(400).json({ error: "Password must be at least 6 characters long" });
     }
 
     const result = await userModel.resetUserPassword(userId, password);
@@ -348,6 +341,52 @@ async function resetUserPassword(req, res) {
   }
 }
 
+async function changeMyPassword(req, res) {
+  try {
+    const userId = req.user?.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "Current password, new password, and confirm password are required" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
+    // Match your UI rules (min 8, must contain upper/lower/number)
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters long" });
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ error: "Password must contain at least 1 uppercase, 1 lowercase, and 1 number" });
+    }
+
+    const user = await userModel.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const ok = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    await userModel.resetUserPassword(userId, newPassword);
+
+    return res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Controller error:", error);
+    return res.status(500).json({ error: "Error changing password" });
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -356,5 +395,6 @@ module.exports = {
   getAllUsers,
   getUserById,
   updateUser,
-  resetUserPassword
+  resetUserPassword,
+  changeMyPassword
 };

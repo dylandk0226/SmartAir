@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import adminService from '../services/adminService';
 
 const Users = () => {
@@ -7,6 +8,7 @@ const Users = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [customerDetails, setCustomerDetails] = useState({});
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -18,6 +20,11 @@ const Users = () => {
     username: '',
     password: '',
     role: 'Customer',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    customerId: null,
   });
   
   const [resetPasswordData, setResetPasswordData] = useState({
@@ -37,8 +44,25 @@ const Users = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getAllUsers();
-      setUsers(data);
+      const usersData = await adminService.getAllUsers();
+      setUsers(usersData);
+
+      const customersData = await adminService.getAllCustomers();
+      const customerMap = {};
+      
+      customersData.forEach(customer => {
+        if (customer.user_id) {
+          customerMap[customer.user_id] = {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            address: customer.address,
+          };
+        }
+      });
+      
+      setCustomerDetails(customerMap);
       setError(null);
     } catch (err) {
       console.error('Error loading users:', err);
@@ -71,6 +95,11 @@ const Users = () => {
       username: '',
       password: '',
       role: 'Customer',
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      customerId: null,
     });
     setResetPasswordData({
       newPassword: '',
@@ -100,6 +129,24 @@ const Users = () => {
     
     if (!formData.role) {
       errors.role = 'Role is required';
+    }
+
+    if (formData.customerId) {
+      if (formData.name && formData.name.trim().length < 1) {
+        errors.name = 'Name must be at least 1 character';
+      }
+
+      if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+        errors.email = 'Invalid email format';
+      }
+
+      if (formData.phone && !/^\d{8}$/.test(formData.phone)) {
+        errors.phone = 'Phone must be 8 digits';
+      }
+
+      if (formData.address && formData.address.trim().length < 5) {
+        errors.address = 'Address must be at least 5 characters';
+      }
     }
     
     setFormErrors(errors);
@@ -164,10 +211,18 @@ const Users = () => {
   const openEditModal = (user) => {
     resetForm();
     setSelectedUser(user);
+
+    const customer = customerDetails[user.id];
+    
     setFormData({
       username: user.username || '',
       password: '',
       role: user.role || 'Customer',
+      name: customer?.name || '',
+      email: customer?.email || '',
+      phone: customer?.phone || '',
+      address: customer?.address || '',
+      customerId: customer?.id || null,
     });
     setShowEditModal(true);
   };
@@ -230,12 +285,23 @@ const Users = () => {
     
     try {
       setSubmitLoading(true);
-      const updateData = {
+      const userUpdateData = {
         username: formData.username,
         role: formData.role,
       };
-      await adminService.updateUser(selectedUser.id, updateData);
-      setSubmitSuccess('User updated successfully!');
+      await adminService.updateUser(selectedUser.id, userUpdateData);
+
+      if (formData.customerId) {
+        const customerUpdateData = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+        };
+        await adminService.updateCustomer(formData.customerId, customerUpdateData);
+      }
+      
+      setSubmitSuccess('User and customer details updated successfully!');
       
       setTimeout(() => {
         closeAllModals();
@@ -478,65 +544,97 @@ const Users = () => {
               </div>
             ) : (
               <ul className="divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <li key={user.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition duration-150">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center min-w-0 flex-1">
-                        <div className="flex-shrink-0">
-                          <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
-                            <span className="text-xl font-semibold text-primary-600">
-                              {user.username?.charAt(0).toUpperCase()}
-                            </span>
+                {filteredUsers.map((user) => {
+                  const customer = customerDetails[user.id];
+                  return (
+                    <li key={user.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition duration-150">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center min-w-0 flex-1">
+                          <div className="flex-shrink-0">
+                            <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                              <span className="text-xl font-semibold text-primary-600">
+                                {user.username?.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1 px-4">
+                            <div>
+                              <p className="text-sm font-medium text-primary-600 truncate">
+                                {user.username}
+                              </p>
+                              <p className="mt-1 flex items-center text-sm text-gray-500">
+                                <span className="text-xs text-gray-400 mr-2">ID: {user.id}</span>
+                              </p>
+                              {customer && (
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-medium text-gray-700">Customer:</span>{' '}
+                                    <Link 
+                                      to={`/customers/${customer.id}`}
+                                      className="text-primary-600 hover:text-primary-800 font-medium hover:underline"
+                                    >
+                                      #{customer.id} {customer.name}
+                                    </Link>
+                                  </p>
+                                  {customer.email && (
+                                    <p className="text-xs text-gray-600">
+                                      <svg className="inline h-3 w-3 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                      </svg>
+                                      {customer.email}
+                                    </p>
+                                  )}
+                                  {customer.phone && (
+                                    <p className="text-xs text-gray-600">
+                                      <svg className="inline h-3 w-3 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                      </svg>
+                                      {customer.phone}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-2">
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                                {user.role}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="min-w-0 flex-1 px-4">
-                          <div>
-                            <p className="text-sm font-medium text-primary-600 truncate">
-                              {user.username}
-                            </p>
-                            <p className="mt-1 flex items-center text-sm text-gray-500">
-                              <span className="text-xs text-gray-400 mr-2">ID: {user.id}</span>
-                            </p>
-                          </div>
-                          <div className="mt-2">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                              {user.role}
-                            </span>
-                          </div>
+                        <div className="flex-shrink-0 flex space-x-2">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                          >
+                            <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => openResetPasswordModal(user)}
+                            className="inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(user)}
+                            className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete
+                          </button>
                         </div>
                       </div>
-                      <div className="flex-shrink-0 flex space-x-2">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                        >
-                          <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openResetPasswordModal(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                          </svg>
-                          Reset
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(user)}
-                          className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -731,6 +829,106 @@ const Users = () => {
                     <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
                   )}
                 </div>
+
+                {/* Customer Details Section */}
+                {formData.customerId && (
+                  <>
+                    <div className="border-t border-gray-200 pt-4">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                        Customer Details (ID: {formData.customerId})
+                      </h4>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        id="edit-name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          formErrors.name ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter full name"
+                      />
+                      {formErrors.name && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        id="edit-email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          formErrors.email ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter email address"
+                      />
+                      {formErrors.email && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        type="text"
+                        id="edit-phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        maxLength="8"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          formErrors.phone ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter phone number (8 digits)"
+                      />
+                      {formErrors.phone && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.phone}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700 mb-1">
+                        Address
+                      </label>
+                      <textarea
+                        id="edit-address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        rows="3"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          formErrors.address ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter full address"
+                      />
+                      {formErrors.address && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.address}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {!formData.customerId && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-600">
+                      <strong>No customer profile linked</strong> - This user does not have an associated customer record.
+                    </p>
+                  </div>
+                )}
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                   <p className="text-sm text-yellow-800">

@@ -1,36 +1,25 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { sql, getConnection } = require('../dbConfig');
 
 // Get all Service Records
 async function getAllServiceRecords() {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords";
-        const result = await connection.request().query(query);
+        const result = await pool.request().query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 
 // Get Service Record by ID
 async function getServiceRecordById(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE id = @id";
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         const result = await request.query(query);
         
@@ -42,100 +31,95 @@ async function getServiceRecordById(id) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err)
-            }
-        }
     }
-
 }
 
 // Get Service Records by AirconUnit ID
 async function getServiceRecordsByAirconUnitId(airconUnitId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE aircon_unit_id = @aircon_unit_id";
-        const request = connection.request();
+        const request = pool.request();
         request.input("aircon_unit_id", sql.Int, airconUnitId);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
+}
 
+// Get Service Records by Customer ID (NEW FUNCTION!)
+async function getServiceRecordsByCustomerId(customerId) {
+    try {
+        const pool = await getConnection();
+
+        const query = `
+            SELECT 
+                sr.id,
+                sr.aircon_unit_id,
+                sr.service_date,
+                sr.description,
+                sr.technician_id,
+                sr.next_due_date,
+                sr.status,
+                sr.cost,
+                au.brand AS unit_brand,
+                au.model AS unit_model,
+                au.serial_number,
+                au.installation_address
+            FROM ServiceRecords sr
+            INNER JOIN AirconUnits au ON sr.aircon_unit_id = au.id
+            WHERE au.customer_id = @customer_id
+            ORDER BY sr.service_date DESC
+        `;
+        
+        const request = pool.request();
+        request.input("customer_id", sql.Int, customerId);
+        const result = await request.query(query);
+        return result.recordset;
+    } catch (error) {
+        console.error("Database error:", error);
+        throw error;
+    }
 }
 
 // Get Service Records by Technician ID
 async function getServiceRecordsByTechnicianId(technicianId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE technician_id = @technician_id";
-        const request = connection.request();
+        const request = pool.request();
         request.input("technician_id", sql.Int, technicianId);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Get Service Records by Status
 async function getServiceRecordsByStatus(status) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE status = @status";
-        const request = connection.request();
+        const request = pool.request();
         request.input("status", sql.NVarChar, status);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Get Service Records by Date Range
 async function getServiceRecordsByDateRange(startDate, endDate) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE service_date BETWEEN @startDate AND @endDate";
-        const request = connection.request();
+        const request = pool.request();
         request.input("startDate", sql.Date, startDate);
         request.input("endDate", sql.Date, endDate);
         const result = await request.query(query);
@@ -143,56 +127,36 @@ async function getServiceRecordsByDateRange(startDate, endDate) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Get Service Records by Due Date
 async function getServiceRecordsByDueDate(isOverdue = false) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         let query;
         if (isOverdue) {
             query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE next_due_date < CAST(GETDATE() AS DATE) AND status != 'completed'";
         } else {
             query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE next_due_date >= CAST(GETDATE() AS DATE) AND status != 'completed' ORDER BY next_due_date ASC";
         }
-        const request = connection.request();
+        const request = pool.request();
         request.input("currentDate", sql.Date, new Date());
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Get Service Records with Advanced Filtering
 async function getServiceRecordsWithFilters(filters) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         let query = "SELECT id, aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost FROM ServiceRecords WHERE 1=1";
-        const request = connection.request();
+        const request = pool.request();
 
         // Apply filters
         if (filters.aircon_unit_id) {
@@ -226,30 +190,20 @@ async function getServiceRecordsWithFilters(filters) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Create new Service Record
 async function createServiceRecord(serviceRecordData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
         INSERT INTO ServiceRecords (aircon_unit_id, service_date, description, technician_id, next_due_date, status, cost)
         VALUES (@aircon_unit_id, @service_date, @description, @technician_id, @next_due_date, @status, @cost);
         SELECT SCOPE_IDENTITY() AS id;
         `;
         
-        const request = connection.request();
+        const request = pool.request();
         request.input("aircon_unit_id", sql.Int, serviceRecordData.aircon_unit_id);
         request.input("service_date", sql.Date, serviceRecordData.service_date);
         request.input("description", sql.NVarChar, serviceRecordData.description);
@@ -265,23 +219,13 @@ async function createServiceRecord(serviceRecordData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 // Update Service Record by ID
 async function updateServiceRecord(id, serviceRecordData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         
         const query = `UPDATE ServiceRecords
         SET aircon_unit_id = @aircon_unit_id, service_date = @service_date, description = @description, 
@@ -289,7 +233,7 @@ async function updateServiceRecord(id, serviceRecordData) {
         WHERE id = @id;
         `;
         
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("aircon_unit_id", sql.Int, serviceRecordData.aircon_unit_id);
         request.input("service_date", sql.Date, serviceRecordData.service_date);
@@ -304,42 +248,34 @@ async function updateServiceRecord(id, serviceRecordData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-
 }
 
 
 // Delete Service Record by ID
 async function deleteServiceRecord(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "DELETE FROM ServiceRecords WHERE id = @id";
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         await request.query(query);
         return { message: "Service Record deleted successfully" };
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
+}
 
+// Get Service Records by Booking ID (for auto-create duplicate check)
+async function getServiceRecordsByBookingId(bookingId) {
+    try {
+        const pool = await getConnection();
+        return [];
+    } catch (error) {
+        console.error("Database error:", error);
+        throw error;
+    }
 }
 
 
@@ -347,6 +283,7 @@ module.exports = {
     getAllServiceRecords,
     getServiceRecordById,
     getServiceRecordsByAirconUnitId,
+    getServiceRecordsByCustomerId,
     getServiceRecordsByTechnicianId,
     getServiceRecordsByStatus,
     getServiceRecordsByDateRange,
@@ -355,4 +292,5 @@ module.exports = {
     createServiceRecord,
     updateServiceRecord,
     deleteServiceRecord,
+    getServiceRecordsByBookingId,
 };

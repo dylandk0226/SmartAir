@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -16,6 +16,27 @@ import ServiceRecords from './pages/ServiceRecords';
 import Technicians from './pages/Technicians';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
+import CustomerServiceHistory from './pages/CustomerServiceHistory';
+import CustomerBookingCalendar from './pages/CustomerBookingCalendar';
+
+// Root redirect component - checks authentication before redirecting
+function RootRedirect() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+}
 
 function App() {
   return (
@@ -92,29 +113,57 @@ function App() {
               }
             />
             
-            {/* Admin Routes - Bookings */}
+            {/* Bookings Route - handles Admin and Customer */}
             <Route
               path="/bookings"
               element={
-                <ProtectedRoute allowedRoles={['Admin']}>
+                <ProtectedRoute allowedRoles={['Admin', 'Customer']}>
                   <Bookings />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/bookings/new"
+              path="/bookings/new/admin"
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <BookingForm />
                 </ProtectedRoute>
               }
             />
-            {/* Edit/View Booking - Uses BookingForm with bookingId from URL param */}
+            {/* Customer New Booking - Calendar view */}
             <Route
-              path="/bookings/:id"
+              path="/bookings/new"
+              element={
+                <ProtectedRoute allowedRoles={['Customer']}>
+                  <CustomerBookingCalendar />
+                </ProtectedRoute>
+              }
+            />
+            {/* Admin New Booking from Customer Detail */}
+            <Route
+              path="/customers/:customerId/bookings/new"
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <BookingForm />
+                </ProtectedRoute>
+              }
+            />
+            {/* Edit/View Booking - Allows BOTH Admin and Customer */}
+            <Route
+              path="/bookings/:id"
+              element={
+                <ProtectedRoute allowedRoles={['Admin', 'Customer']}>
+                  <BookingForm />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Customer Routes - Service History */}
+            <Route
+              path="/service-history"
+              element={
+                <ProtectedRoute allowedRoles={['Customer']}>
+                  <CustomerServiceHistory />
                 </ProtectedRoute>
               }
             />
@@ -149,16 +198,6 @@ function App() {
               }
             />
 
-            {/* New Booking from Customer Detail page */}
-            <Route
-              path="/customers/:customerId/bookings/new"
-              element={
-                <ProtectedRoute allowedRoles={['Admin']}>
-                  <BookingForm />
-                </ProtectedRoute>
-              }
-            />
-
             {/* Profile Route */}
             <Route
               path="/profile"
@@ -169,8 +208,8 @@ function App() {
               }
             />
 
-            {/* Default Route - Redirect to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Default Route - Smart redirect based on authentication */}
+            <Route path="/" element={<RootRedirect />} />
             
             {/* Catch all - redirect to login */}
             <Route path="*" element={<Navigate to="/login" replace />} />

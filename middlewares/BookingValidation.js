@@ -1,9 +1,8 @@
 const Joi = require("joi");
 
 const bookingSchema = Joi.object({
-    customer_id: Joi.number().integer().required().messages({
+    customer_id: Joi.number().integer().optional().messages({
         "number.base": "Customer ID must be a number",
-        "any.required": "Customer ID is required",
     }),
 
     aircon_unit_id: Joi.number().integer().optional().allow(null).messages({

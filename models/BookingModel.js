@@ -1,10 +1,9 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { sql, getConnection } = require('../dbConfig');
 
 //Get all Bookings
 async function getAllBookings() {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 b.*,
@@ -18,7 +17,7 @@ async function getAllBookings() {
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
             ORDER BY b.created_at DESC
         `;
-        const result = await connection.request().query(query);
+        const result = await pool.request().query(query);
 
         console.log("Query result:", result.recordset);
 
@@ -26,22 +25,13 @@ async function getAllBookings() {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Booking by ID
 async function getBookingById(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 b.*,
@@ -56,7 +46,7 @@ async function getBookingById(id) {
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
             WHERE b.id = @id
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         const result = await request.query(query);
 
@@ -68,22 +58,13 @@ async function getBookingById(id) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Bookings by Customer ID
 async function getBookingsByCustomerId(customerId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 b.*,
@@ -94,29 +75,20 @@ async function getBookingsByCustomerId(customerId) {
             WHERE b.customer_id = @customer_id
             ORDER BY b.created_at DESC
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("customer_id", sql.Int, customerId);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Bookings by Status
 async function getBookingsByStatus(status) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
             SELECT 
                 b.*,
@@ -130,29 +102,20 @@ async function getBookingsByStatus(status) {
             WHERE b.status = @status
             ORDER BY b.preferred_date ASC
         `;
-        const request = connection.request();
+        const request = pool.request();
         request.input("status", sql.VarChar, status);
         const result = await request.query(query);
         return result.recordset;
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Get Bookings with Filters
 async function getBookingsWithFilters(filters) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         let query = `
             SELECT 
@@ -167,7 +130,7 @@ async function getBookingsWithFilters(filters) {
             LEFT JOIN AirconUnits au ON b.aircon_unit_id = au.id
             WHERE 1=1
         `;
-        const request = connection.request();
+        const request = pool.request();
 
         if (filters.customer_id) {
             query += " AND b.customer_id = @customer_id";
@@ -201,25 +164,16 @@ async function getBookingsWithFilters(filters) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Create new Booking
 async function createBooking(bookingData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const customerCheckQuery = "SELECT id FROM Customers WHERE id = @customer_id";
-        const customerCheck = connection.request();
+        const customerCheck = pool.request();
         customerCheck.input("customer_id", sql.Int, bookingData.customer_id);
         const customerResult = await customerCheck.query(customerCheckQuery);
 
@@ -232,7 +186,7 @@ async function createBooking(bookingData) {
                 SELECT id FROM AirconUnits 
                 WHERE id = @aircon_unit_id AND customer_id = @customer_id
             `;
-            const unitCheck = connection.request();
+            const unitCheck = pool.request();
             unitCheck.input("aircon_unit_id", sql.Int, bookingData.aircon_unit_id);
             unitCheck.input("customer_id", sql.Int, bookingData.customer_id);
             const unitResult = await unitCheck.query(unitCheckQuery);
@@ -256,7 +210,7 @@ async function createBooking(bookingData) {
             SELECT SCOPE_IDENTITY() AS id;
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("customer_id", sql.Int, bookingData.customer_id);
         request.input("aircon_unit_id", sql.Int, bookingData.aircon_unit_id || null);
         request.input("service_type", sql.VarChar, bookingData.service_type);
@@ -276,76 +230,88 @@ async function createBooking(bookingData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Update Booking by ID
 async function updateBooking(id, bookingData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
+
+        // Build dynamic UPDATE query - only update fields that are provided
+        let updateFields = [];
+        const request = pool.request();
+        request.input("id", sql.Int, id);
+
+        if (bookingData.service_type !== undefined) {
+            updateFields.push("service_type = @service_type");
+            request.input("service_type", sql.VarChar, bookingData.service_type);
+        }
+        if (bookingData.preferred_date !== undefined) {
+            updateFields.push("preferred_date = @preferred_date");
+            request.input("preferred_date", sql.Date, bookingData.preferred_date);
+        }
+        if (bookingData.preferred_time !== undefined) {
+            updateFields.push("preferred_time = @preferred_time");
+            request.input("preferred_time", sql.VarChar, bookingData.preferred_time);
+        }
+        if (bookingData.service_address !== undefined) {
+            updateFields.push("service_address = @service_address");
+            request.input("service_address", sql.Text, bookingData.service_address);
+        }
+        if (bookingData.postal_code !== undefined) {
+            updateFields.push("postal_code = @postal_code");
+            request.input("postal_code", sql.VarChar, bookingData.postal_code || null);
+        }
+        if (bookingData.contact_phone !== undefined) {
+            updateFields.push("contact_phone = @contact_phone");
+            request.input("contact_phone", sql.VarChar, bookingData.contact_phone);
+        }
+        if (bookingData.aircon_brand !== undefined) {
+            updateFields.push("aircon_brand = @aircon_brand");
+            request.input("aircon_brand", sql.VarChar, bookingData.aircon_brand || null);
+        }
+        if (bookingData.aircon_model !== undefined) {
+            updateFields.push("aircon_model = @aircon_model");
+            request.input("aircon_model", sql.VarChar, bookingData.aircon_model || null);
+        }
+        if (bookingData.issue_description !== undefined) {
+            updateFields.push("issue_description = @issue_description");
+            request.input("issue_description", sql.Text, bookingData.issue_description || null);
+        }
+        if (bookingData.technician_id !== undefined) {
+            updateFields.push("technician_id = @technician_id");
+            request.input("technician_id", sql.Int, bookingData.technician_id || null);
+        }
+        if (bookingData.status && bookingData.status.trim() !== '') {
+            updateFields.push("status = @status");
+            request.input("status", sql.VarChar, bookingData.status);
+        }
+
+        updateFields.push("updated_at = GETDATE()");
+
+        if (updateFields.length === 1) {
+            throw new Error("No fields to update");
+        }
 
         const query = `
             UPDATE Bookings
-            SET 
-                service_type = @service_type,
-                preferred_date = @preferred_date,
-                preferred_time = @preferred_time,
-                service_address = @service_address,
-                postal_code = @postal_code,
-                contact_phone = @contact_phone,
-                aircon_brand = @aircon_brand,
-                aircon_model = @aircon_model,
-                issue_description = @issue_description,
-                technician_id = @technician_id,
-                status = @status,
-                updated_at = GETDATE()
+            SET ${updateFields.join(', ')}
             WHERE id = @id
         `;
-
-        const request = connection.request();
-        request.input("id", sql.Int, id);
-        request.input("service_type", sql.VarChar, bookingData.service_type);
-        request.input("preferred_date", sql.Date, bookingData.preferred_date);
-        request.input("preferred_time", sql.VarChar, bookingData.preferred_time);
-        request.input("service_address", sql.Text, bookingData.service_address);
-        request.input("postal_code", sql.VarChar, bookingData.postal_code || null);
-        request.input("contact_phone", sql.VarChar, bookingData.contact_phone);
-        request.input("aircon_brand", sql.VarChar, bookingData.aircon_brand || null);
-        request.input("aircon_model", sql.VarChar, bookingData.aircon_model || null);
-        request.input("issue_description", sql.Text, bookingData.issue_description || null);
-        request.input("technician_id", sql.Int, bookingData.technician_id || null);
-        request.input("status", sql.VarChar, bookingData.status);
 
         await request.query(query);
         return await getBookingById(id);
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Update Booking Status
 async function updateBookingStatus(id, status) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
 
         const query = `
             UPDATE Bookings
@@ -353,7 +319,7 @@ async function updateBookingStatus(id, status) {
             WHERE id = @id
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("status", sql.VarChar, status);
 
@@ -362,39 +328,22 @@ async function updateBookingStatus(id, status) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 //Delete Booking by ID
 async function deleteBooking(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "DELETE FROM Bookings WHERE id = @id";
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         await request.query(query);
         return { message: "Booking deleted successfully!" };
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 

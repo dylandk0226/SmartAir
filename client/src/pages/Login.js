@@ -28,14 +28,8 @@ const Login = () => {
 
     try {
       const response = await login(formData);
-      
-      if (response.user.role === 'Admin') {
-        navigate('/dashboard');
-      } else if (response.user.role === 'Technician') {
-        navigate('/technician/dashboard');
-      } else if (response.user.role === 'Customer') {
-        navigate('/customer/dashboard');
-      }
+
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import adminService from '../services/adminService';
 import authService from '../services/authService';
-
+import customerService from '../services/customerService';
 const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -30,7 +30,10 @@ const Profile = () => {
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const RAW_API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+  const API_BASE = RAW_API_BASE.endsWith('/api') ? RAW_API_BASE : `${RAW_API_BASE}/api`;
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadProfileData();
   }, [user]);
@@ -57,6 +60,7 @@ const Profile = () => {
             name: userData.technician.name,
             email: userData.technician.email,
             phone: userData.technician.phone,
+            technician_id: userData.technician.technician_id || userData.technician.id,
           };
         } else {
           data = {
@@ -65,31 +69,25 @@ const Profile = () => {
           };
         }
       } else if (user.role === 'Customer') {
-        // Customer: Get customer profile via customer API
-        const customerData = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000/api'}/customer/profile`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }).then(res => res.json());
-
-        const userData = await adminService.getUserById(user.id);
+        const customerData = await customerService.getMyProfile();
         data = {
-          username: userData.username,
-          role: userData.role,
+          username: user.username,
+          role: user.role,
           name: customerData.name,
           email: customerData.email,
           phone: customerData.phone,
           address: customerData.address,
+          customer_id: customerData.customer_id || customerData.id,
         };
       }
 
       setProfileData(data);
       setFormData({
-        username: data.username || '',
-        name: data.name || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        address: data.address || '',
+        username: data?.username || '',
+        name: data?.name || '',
+        email: data?.email || '',
+        phone: data?.phone || '',
+        address: data?.address || '',
       });
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -133,8 +131,10 @@ const Profile = () => {
     const newErrors = {};
 
     // Username validation (min 3 characters)
-    if (formData.username.trim().length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+    if (user.role === 'Admin') {
+      if (formData.username.trim().length < 3) {
+        newErrors.username = 'Username must be at least 3 characters';
+      }
     }
 
     // Role-specific validations
@@ -206,38 +206,32 @@ const Profile = () => {
     }
 
     try {
-      // Update username (for all roles)
-      await adminService.updateUser(user.id, {
-        username: formData.username,
-        role: user.role,
-      });
+      if (user.role === 'Admin') {
+        await adminService.updateUser(user.id, {
+          username: formData.username,
+          role: user.role,
+        });
 
-      // Update role-specific profile data
+        const updatedUser = { ...user, username: formData.username };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+
       if (user.role === 'Technician') {
-        await adminService.updateTechnician(profileData.technician_id || user.id, {
+        await adminService.updateTechnician(profileData?.technician_id || user.id, {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
         });
-      } else if (user.role === 'Customer') {
-        await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000/api'}/customer/profile`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            address: formData.address,
-          })
-        });
       }
 
-      // Update localStorage user data
-      const updatedUser = { ...user, username: formData.username };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (user.role === 'Customer') {
+        await customerService.updateMyProfile({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+        });
+      }
 
       setSuccessMessage('Profile updated successfully!');
       setEditing(false);
@@ -260,21 +254,25 @@ const Profile = () => {
     }
 
     try {
-      // Verify current password by attempting login
-      try {
-        await authService.login({
-          username: user.username,
-          password: passwordData.currentPassword,
-        });
-      } catch (err) {
-        setPasswordErrorMessage('Current password is incorrect');
+      const res = await fetch(`${API_BASE}/users/me/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+          confirmPassword: passwordData.confirmPassword,
+        })
+      });
+
+      const payload = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setPasswordErrorMessage(payload.error || 'Failed to change password');
         return;
       }
-
-      // Reset password
-      await adminService.resetUserPassword(user.id, {
-        password: passwordData.newPassword,
-      });
 
       setPasswordSuccessMessage('Password changed successfully!');
       setPasswordData({
@@ -341,17 +339,19 @@ const Profile = () => {
                 {/* Username */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Username <span className="text-red-500">*</span>
+                    Username {user.role === 'Admin' && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
+                    disabled={user.role !== 'Admin'} // NEW
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors.username ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    } ${user.role !== 'Admin' ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`} // NEW
                   />
+
                   {errors.username && (
                     <p className="mt-1 text-sm text-red-600">{errors.username}</p>
                   )}
@@ -469,11 +469,11 @@ const Profile = () => {
                       setEditing(false);
                       setErrors({});
                       setFormData({
-                        username: profileData.username || '',
-                        name: profileData.name || '',
-                        email: profileData.email || '',
-                        phone: profileData.phone || '',
-                        address: profileData.address || '',
+                        username: profileData?.username || '',
+                        name: profileData?.name || '',
+                        email: profileData?.email || '',
+                        phone: profileData?.phone || '',
+                        address: profileData?.address || '',
                       });
                     }}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
@@ -493,10 +493,10 @@ const Profile = () => {
                 <div>
                   <p className="text-sm text-gray-500">Role</p>
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                    user.role === 'Admin' ? 'bg-red-100 text-red-800' :
-                    user.role === 'Technician' ? 'bg-blue-100 text-blue-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
+                      user.role === 'Admin' ? 'bg-red-100 text-red-800' : 
+                      user.role === 'Technician' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
                     {user.role}
                   </span>
                 </div>
@@ -581,7 +581,7 @@ const Profile = () => {
                   )}
                 </div>
 
-                {/* New Password */}
+                {/* New Password */}    
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Password <span className="text-red-500">*</span>
@@ -595,9 +595,6 @@ const Profile = () => {
                       errors.newPassword ? 'border-red-300' : 'border-gray-300'
                     }`}
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Min 8 chars with 1 uppercase, 1 lowercase, 1 number
-                  </p>
                   {errors.newPassword && (
                     <p className="mt-1 text-sm text-red-600">{errors.newPassword}</p>
                   )}

@@ -1,12 +1,11 @@
-const { sql, dbConfig } = require('../dbConfig');
+const { sql, getConnection } = require('../dbConfig');
 
 //Get all Technicians
 async function getAllTechnicians() {
-    let connection;
     try{
-        connection = await sql.connect (dbConfig);
+        const pool = await getConnection();
         const query = "Select id, name, phone, email, user_id from Technicians";
-        const result = await connection.request().query(query);
+        const result = await pool.request().query(query);
 
         console.log("Query result:", result.recordset); //Log the result for debugging
 
@@ -14,26 +13,16 @@ async function getAllTechnicians() {
     } catch (error){
         console.error ("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 // Get technician by ID
 
 async function getTechnicianById(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "Select id, name, phone, email, user_id from Technicians where id = @id";
-        const request = connection.request();
+        const request = pool.request();
         request.input ("id", sql.Int, id);
         const result = await request.query(query);
 
@@ -45,24 +34,15 @@ async function getTechnicianById(id) {
     } catch (error){
         console.error ("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 // Get technician by user ID
 async function getTechnicianByUserId(userId) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "Select id, name, phone, email, user_id from Technicians where user_id = @user_id";
-        const request = connection.request();
+        const request = pool.request();
         request.input("user_id", sql.Int, userId);
         const result = await request.query(query);
 
@@ -74,29 +54,20 @@ async function getTechnicianByUserId(userId) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error("Error closing connection:", err);
-            }
-        }
     }
 }
 
 // Create new technician
 async function createTechnician(technicianData) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `
         Insert into Technicians (name, phone, email, user_id)
         Values (@name, @phone, @email, @user_id);
         Select scope_identity() as id;
         `;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("name", sql.NVarChar, technicianData.name);
         request.input("phone", sql.NVarChar, technicianData.phone);
         request.input("email", sql.NVarChar, technicianData.email);
@@ -108,29 +79,19 @@ async function createTechnician(technicianData) {
     } catch (error) {
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 // Update a technician by ID
 
 async function updateTechnician(id, technicianData) {
-    let connection;
     try{
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = `Update Technicians
-        Set name = @name, phone = @phone, email = @email
+        Set name = @name, phone = @phone, email = @email, user_id = @user_id
         where id = @id;`;
 
-        const request = connection.request();
+        const request = pool.request();
         request.input("id", sql.Int, id);
         request.input("name", sql.NVarChar, technicianData.name);
         request.input("phone", sql.NVarChar, technicianData.phone);
@@ -142,43 +103,24 @@ async function updateTechnician(id, technicianData) {
     } catch (error){
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 //Delete a technician by ID
 
 async function deleteTechnician(id) {
-    let connection;
     try {
-        connection = await sql.connect(dbConfig);
+        const pool = await getConnection();
         const query = "Delete from Technicians where id = @id";
 
-        const request = connection.request();
+        const request = pool.request();
         request.input ("id", sql.Int, id);
         await request.query(query);
         return {message: "Technician deleted successfully!"};
     } catch (error){
         console.error("Database error:", error);
         throw error;
-    } finally {
-        if (connection){
-            try {
-                await connection.close();
-            } catch (err){
-                console.error("Error closing connection:", err);
-            }
-        }
     }
-    
 }
 
 

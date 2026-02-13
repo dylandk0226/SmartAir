@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import adminService from '../services/adminService';
 import { getStatusColor } from '../utils/statusColors';
+import { useAuth } from '../context/AuthContext';
+import CustomerBookings from './CustomerBookings';
 
 const Bookings = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [bookings, setBookings] = useState([]);
@@ -101,7 +104,7 @@ const Bookings = () => {
   };
 
   const handleEditBooking = (bookingId, customerId) => {
-    navigate('/bookings/new', { state: { bookingId, customerId } });
+    navigate(`/bookings/${bookingId}`);
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -146,6 +149,10 @@ const Bookings = () => {
     );
   }
 
+  if (user?.role === 'Customer') {
+    return <CustomerBookings />;
+  }
+
   return (
     <>
     <div className="min-h-screen bg-gray-50 py-8">
@@ -156,7 +163,7 @@ const Bookings = () => {
             <p className="mt-2 text-sm text-gray-600">Manage all service bookings</p>
           </div>
           <Link
-            to="/bookings/new"
+            to="/bookings/new/admin"
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
