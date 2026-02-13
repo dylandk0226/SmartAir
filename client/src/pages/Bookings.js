@@ -18,7 +18,7 @@ const Bookings = () => {
   
   // Check if coming from Technicians page
   const technicianFilter = location.state?.technicianId || null;
-  const technicianName = location.state?.technicianName || '';
+  //const technicianName = location.state?.technicianName || '';
   
   const [filters, setFilters] = useState({
     search: '',

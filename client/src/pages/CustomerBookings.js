@@ -1,29 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // UPDATED: removed useNavigate (was unused)
 import customerService from '../services/customerService';
 import { getStatusColor } from '../utils/statusColors';
 
 const CustomerBookings = () => {
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
-
-  useEffect(() => {
-    applyFilter();
-  }, [bookings, filter]);
+  const applyFilter = (sourceBookings = bookings, selectedFilter = filter) => {
+    if (selectedFilter === 'all') {
+      setFilteredBookings(sourceBookings);
+    } else {
+      setFilteredBookings(sourceBookings.filter(b => b.status === selectedFilter));
+    }
+  };
 
   const loadBookings = async () => {
     try {
       setLoading(true);
       const data = await customerService.getMyBookings();
       setBookings(data);
+
+      applyFilter(data, filter);
     } catch (err) {
       console.error('Error loading bookings:', err);
       setError('Failed to load bookings');
@@ -32,13 +33,13 @@ const CustomerBookings = () => {
     }
   };
 
-  const applyFilter = () => {
-    if (filter === 'all') {
-      setFilteredBookings(bookings);
-    } else {
-      setFilteredBookings(bookings.filter(b => b.status === filter));
-    }
-  };
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  useEffect(() => {
+    applyFilter(bookings, filter);
+  }, [bookings, filter]);
 
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) {

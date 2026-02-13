@@ -16,7 +16,7 @@ const CustomerServiceHistory = () => {
 
   useEffect(() => {
     applyFilter();
-  }, [serviceRecords, filter]);
+  }, [filter, serviceRecords]);
 
   const loadServiceHistory = async () => {
     try {

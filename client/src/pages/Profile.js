@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import adminService from '../services/adminService';
-import authService from '../services/authService';
 import customerService from '../services/customerService';
 const Profile = () => {
   const { user } = useAuth();
@@ -35,7 +34,9 @@ const Profile = () => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    loadProfileData();
+    if (user){
+      loadProfileData();
+    }
   }, [user]);
 
   const loadProfileData = async () => {

@@ -27,7 +27,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await login(formData);
+      await login(formData);
 
       navigate('/dashboard');
     } catch (err) {
