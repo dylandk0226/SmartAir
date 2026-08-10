@@ -269,4 +269,6 @@ module.exports = {
     updateBooking,
     updateBookingStatus,
     deleteBooking,
+    formatDate,
+    calculateNextServiceDate,
 };
