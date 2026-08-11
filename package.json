@@ -6,9 +6,22 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
+    "start:app": "node app.js",
     "client": "cd client && npm start",
     "build": "cd client && npm install && npm run build",
-    "install-all": "npm install && cd client && npm install"
+    "install-all": "npm install && cd client && npm install",
+    "test": "jest tests/unit",
+    "test:unit": "jest tests/unit",
+    "test:api": "jest tests/api",
+    "test:ui": "node tests/ui/selenium_booking.js",
+    "test:perf": "k6 run tests/perf/load_test.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/client/"
+    ]
   },
   "repository": {
     "type": "git",
@@ -36,6 +49,10 @@
     "mssql": "^12.2.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "chromedriver": "^151.0.5",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.11",
+    "selenium-webdriver": "^4.25.0",
+    "supertest": "^7.0.0"
   }
 }
